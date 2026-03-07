@@ -1,0 +1,53 @@
+"""
+test_asteroid_classification_query.py
+"""
+
+import uuid
+
+from asteroid_atlas.analytics.asteroid_queries import list_asteroids_with_orbital_metrics
+from asteroid_atlas.db.session import SessionLocal
+from asteroid_atlas.models.asteroid import Asteroid
+from asteroid_atlas.models.asteroid_orbit import AsteroidOrbit
+
+
+def test_query_includes_earth_crossing_flag():
+    """
+    Ensure asteroid queries include Earth orbit crossing classification.
+    """
+
+    session = SessionLocal()
+    unique_id = f"TEST-{uuid.uuid4()}"
+
+    asteroid = Asteroid(
+        name="Crossing Test Asteroid",
+        nasa_jpl_id=unique_id,
+    )
+    session.add(asteroid)
+    session.commit()
+
+    orbit = AsteroidOrbit(
+        asteroid_id=asteroid.id,
+        epoch_mjd=60200.5,
+        semi_major_axis_au=1.0,
+        eccentricity=0.2,
+        inclination_deg=10,
+        longitude_of_ascending_node_deg=100,
+        argument_of_periapsis_deg=50,
+        mean_anomaly_deg=20,
+        orbital_period_days=365,
+    )
+
+    session.add(orbit)
+    session.commit()
+
+    results = list_asteroids_with_orbital_metrics(session)
+
+    match = next((r for r in results if r["nasa_jpl_id"] == unique_id), None)
+
+    assert match is not None
+    assert match["earth_orbit_crossing"] is True
+
+    session.query(AsteroidOrbit).filter_by(asteroid_id=asteroid.id).delete()
+    session.query(Asteroid).filter_by(nasa_jpl_id=unique_id).delete()
+    session.commit()
+    session.close()
