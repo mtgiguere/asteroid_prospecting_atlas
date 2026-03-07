@@ -8,7 +8,7 @@ from asteroid_atlas.analytics.orbital_metrics import calculate_perihelion_apheli
 from asteroid_atlas.models.asteroid import Asteroid
 from asteroid_atlas.models.asteroid_orbit import AsteroidOrbit
 from asteroid_atlas.analytics.orbital_classification import is_earth_orbit_crossing
-
+from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
 
 def list_asteroids_with_orbits(session) -> list[dict]:
     """
@@ -71,6 +71,7 @@ def list_asteroids_with_orbital_metrics(session) -> list[dict]:
                 "nasa_jpl_id": asteroid.nasa_jpl_id,
                 "semi_major_axis_au": orbit.semi_major_axis_au,
                 "eccentricity": orbit.eccentricity,
+                "inclination_deg": orbit.inclination_deg,
                 "perihelion_au": perihelion,
                 "aphelion_au": aphelion,
                 "earth_orbit_crossing": earth_crossing,
@@ -82,3 +83,33 @@ def list_asteroids_with_orbital_metrics(session) -> list[dict]:
 def list_earth_crossing_asteroids(session) -> list[dict]:
     rows = list_asteroids_with_orbital_metrics(session)
     return [row for row in rows if row["earth_orbit_crossing"]]
+
+def list_most_accessible_asteroids(
+    session,
+    limit: int = 10,
+    nasa_jpl_ids: list[str] | None = None,
+    earth_crossing_only: bool = False,
+) -> list[dict]:
+    """
+    Return asteroids ordered by accessibility score, lowest first.
+    Optionally restrict results to a provided set of JPL IDs.
+    """
+    rows = list_asteroids_with_orbital_metrics(session)
+
+    if nasa_jpl_ids is not None:
+        allowed = set(nasa_jpl_ids)
+        rows = [r for r in rows if r["nasa_jpl_id"] in allowed]
+
+    if earth_crossing_only:
+        rows = [r for r in rows if r["earth_orbit_crossing"]]
+
+    for row in rows:
+        row["accessibility_score"] = calculate_accessibility_score(
+            row["semi_major_axis_au"],
+            row["eccentricity"],
+            row["inclination_deg"],
+        )
+
+    rows.sort(key=lambda r: r["accessibility_score"])
+
+    return rows[:limit]
