@@ -21,7 +21,9 @@ def test_fetch_jpl_asteroid_returns_json_payload():
     }
     mock_response.raise_for_status.return_value = None
 
-    with patch("asteroid_atlas.ingest.jpl_asteroids.requests.get", return_value=mock_response) as mock_get:
+    with patch(
+        "asteroid_atlas.ingest.jpl_asteroids.requests.get", return_value=mock_response
+    ) as mock_get:
         result = fetch_jpl_asteroid("2000433")
 
     mock_get.assert_called_once()

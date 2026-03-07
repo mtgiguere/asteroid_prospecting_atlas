@@ -61,11 +61,13 @@ def test_ingest_asteroids_with_orbits():
     existing_ids = [a.id for a in existing_asteroids]
 
     if existing_ids:
-        session.query(AsteroidOrbit).filter(
-            AsteroidOrbit.asteroid_id.in_(existing_ids)
-        ).delete(synchronize_session=False)
+        session.query(AsteroidOrbit).filter(AsteroidOrbit.asteroid_id.in_(existing_ids)).delete(
+            synchronize_session=False
+        )
 
-    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_(spkids)).delete(synchronize_session=False)
+    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_(spkids)).delete(
+        synchronize_session=False
+    )
     session.commit()
 
     def fake_fetch(spkid):
@@ -87,14 +89,16 @@ def test_ingest_asteroids_with_orbits():
     assert len(db_asteroids) == 2
 
     asteroid_ids = [a.id for a in db_asteroids]
-    db_orbits = session.query(AsteroidOrbit).filter(
-        AsteroidOrbit.asteroid_id.in_(asteroid_ids)
-    ).all()
+    db_orbits = (
+        session.query(AsteroidOrbit).filter(AsteroidOrbit.asteroid_id.in_(asteroid_ids)).all()
+    )
     assert len(db_orbits) == 2
 
-    session.query(AsteroidOrbit).filter(
-        AsteroidOrbit.asteroid_id.in_(asteroid_ids)
-    ).delete(synchronize_session=False)
-    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_(spkids)).delete(synchronize_session=False)
+    session.query(AsteroidOrbit).filter(AsteroidOrbit.asteroid_id.in_(asteroid_ids)).delete(
+        synchronize_session=False
+    )
+    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_(spkids)).delete(
+        synchronize_session=False
+    )
     session.commit()
     session.close()

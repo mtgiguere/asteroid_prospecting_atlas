@@ -19,17 +19,13 @@ def test_ingest_asteroids_batch():
     spkids = ["TEST-BATCH-1", "TEST-BATCH-2"]
 
     mock_payloads = {
-        "TEST-BATCH-1": {
-            "object": {"fullname": "Batch Asteroid 1", "spkid": "TEST-BATCH-1"}
-        },
-        "TEST-BATCH-2": {
-            "object": {"fullname": "Batch Asteroid 2", "spkid": "TEST-BATCH-2"}
-        },
+        "TEST-BATCH-1": {"object": {"fullname": "Batch Asteroid 1", "spkid": "TEST-BATCH-1"}},
+        "TEST-BATCH-2": {"object": {"fullname": "Batch Asteroid 2", "spkid": "TEST-BATCH-2"}},
     }
 
-    session.query(Asteroid).filter(
-        Asteroid.nasa_jpl_id.in_(spkids)
-    ).delete(synchronize_session=False)
+    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_(spkids)).delete(
+        synchronize_session=False
+    )
     session.commit()
 
     def fake_fetch(spkid):
@@ -47,9 +43,9 @@ def test_ingest_asteroids_batch():
     assert "Batch Asteroid 1" in names
     assert "Batch Asteroid 2" in names
 
-    session.query(Asteroid).filter(
-        Asteroid.nasa_jpl_id.in_(spkids)
-    ).delete(synchronize_session=False)
+    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_(spkids)).delete(
+        synchronize_session=False
+    )
     session.commit()
 
     session.close()

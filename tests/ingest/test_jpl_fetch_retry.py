@@ -15,9 +15,7 @@ def test_fetch_jpl_asteroid_retries_once_then_succeeds():
     """
 
     mock_response = Mock()
-    mock_response.json.return_value = {
-        "object": {"fullname": "Retry Asteroid", "spkid": "123"}
-    }
+    mock_response.json.return_value = {"object": {"fullname": "Retry Asteroid", "spkid": "123"}}
     mock_response.raise_for_status.return_value = None
 
     call_sequence = [

@@ -9,6 +9,7 @@ from asteroid_atlas.db.session import SessionLocal
 
 app = FastAPI()
 
+
 @app.get("/ping")
 def ping() -> dict[str, str]:
     return {"message": "pong"}

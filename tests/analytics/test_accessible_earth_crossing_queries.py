@@ -71,9 +71,9 @@ def test_list_most_accessible_earth_crossing_filter():
         AsteroidOrbit.asteroid_id.in_([crossing.id, non_crossing.id])
     ).delete(synchronize_session=False)
 
-    session.query(Asteroid).filter(
-        Asteroid.nasa_jpl_id.in_([crossing_id, non_crossing_id])
-    ).delete(synchronize_session=False)
+    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_([crossing_id, non_crossing_id])).delete(
+        synchronize_session=False
+    )
 
     session.commit()
     session.close()

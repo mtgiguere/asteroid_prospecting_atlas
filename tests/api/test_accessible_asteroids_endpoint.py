@@ -31,6 +31,7 @@ def test_accessible_asteroids_endpoint_respects_limit():
     assert isinstance(response.json(), list)
     assert len(response.json()) <= 3
 
+
 def test_accessible_asteroids_endpoint_accepts_earth_crossing_filter():
     """
     Ensure endpoint accepts the earth_crossing_only parameter.
@@ -43,6 +44,7 @@ def test_accessible_asteroids_endpoint_accepts_earth_crossing_filter():
 
     for row in response.json():
         assert row["earth_orbit_crossing"] is True
+
 
 def test_accessible_asteroids_response_schema():
     """

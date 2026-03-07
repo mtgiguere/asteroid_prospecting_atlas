@@ -39,9 +39,7 @@ def test_ingest_asteroid_with_orbit():
     }
 
     session.query(AsteroidOrbit).filter(
-        AsteroidOrbit.asteroid_id.in_(
-            session.query(Asteroid.id).filter_by(nasa_jpl_id=unique_id)
-        )
+        AsteroidOrbit.asteroid_id.in_(session.query(Asteroid.id).filter_by(nasa_jpl_id=unique_id))
     ).delete(synchronize_session=False)
     session.query(Asteroid).filter_by(nasa_jpl_id=unique_id).delete()
     session.commit()

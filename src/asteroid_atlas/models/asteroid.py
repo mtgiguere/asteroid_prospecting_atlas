@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, Text
 
 from asteroid_atlas.models.base import Base
 
+
 class Asteroid(Base):
     """ORM model for the asteroids table."""
 

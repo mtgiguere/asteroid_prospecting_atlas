@@ -3,8 +3,9 @@ jpl_asteroids.py
 """
 
 import logging
-import requests
 import time
+
+import requests
 
 from asteroid_atlas.ingest.models import NormalizedAsteroid, NormalizedAsteroidOrbit
 from asteroid_atlas.models.asteroid import Asteroid
@@ -34,13 +35,14 @@ def fetch_jpl_asteroid(spkid: str) -> dict:
             response.raise_for_status()
             return response.json()
 
-        except requests.exceptions.RequestException as exc:
+        except requests.exceptions.RequestException:
             if attempt == max_attempts - 1:
                 raise
 
             logger.warning("Fetch failed for %s, retrying...", spkid)
             time.sleep(delay)
             delay *= 2
+
 
 def normalize_jpl_asteroid(jpl_json: dict) -> NormalizedAsteroid:
     """
@@ -66,16 +68,13 @@ def normalize_jpl_asteroid(jpl_json: dict) -> NormalizedAsteroid:
         nasa_jpl_id=spkid,
     )
 
+
 def insert_asteroid(session, asteroid: NormalizedAsteroid) -> Asteroid:
     """
     Insert a normalized asteroid record into the database.
     """
 
-    existing = (
-        session.query(Asteroid)
-        .filter_by(nasa_jpl_id=asteroid.nasa_jpl_id)
-        .first()
-    )
+    existing = session.query(Asteroid).filter_by(nasa_jpl_id=asteroid.nasa_jpl_id).first()
 
     if existing:
         logger.info("Asteroid %s already exists", asteroid.nasa_jpl_id)
@@ -93,6 +92,7 @@ def insert_asteroid(session, asteroid: NormalizedAsteroid) -> Asteroid:
 
     return db_asteroid
 
+
 def ingest_asteroid(session, spkid: str) -> Asteroid:
     """
     Fetch, normalize, and insert a single asteroid record.
@@ -101,6 +101,7 @@ def ingest_asteroid(session, spkid: str) -> Asteroid:
     jpl_json = fetch_jpl_asteroid(spkid)
     asteroid = normalize_jpl_asteroid(jpl_json)
     return insert_asteroid(session, asteroid)
+
 
 def ingest_asteroids(session, spkids: list[str]) -> list[Asteroid]:
     """
@@ -114,6 +115,7 @@ def ingest_asteroids(session, spkids: list[str]) -> list[Asteroid]:
         results.append(asteroid)
 
     return results
+
 
 def normalize_jpl_orbit(jpl_json: dict) -> NormalizedAsteroidOrbit:
     """
@@ -130,9 +132,7 @@ def normalize_jpl_orbit(jpl_json: dict) -> NormalizedAsteroidOrbit:
 
     if isinstance(elements, list):
         element_lookup = {
-            item["name"]: item["value"]
-            for item in elements
-            if "name" in item and "value" in item
+            item["name"]: item["value"] for item in elements if "name" in item and "value" in item
         }
     else:
         element_lookup = elements
@@ -148,7 +148,10 @@ def normalize_jpl_orbit(jpl_json: dict) -> NormalizedAsteroidOrbit:
         orbital_period_days=float(element_lookup["per"]),
     )
 
-def insert_asteroid_orbit(session, asteroid_id: int, orbit: NormalizedAsteroidOrbit) -> AsteroidOrbit:
+
+def insert_asteroid_orbit(
+    session, asteroid_id: int, orbit: NormalizedAsteroidOrbit
+) -> AsteroidOrbit:
     """
     Insert an asteroid orbit record into the database.
     """
@@ -170,6 +173,7 @@ def insert_asteroid_orbit(session, asteroid_id: int, orbit: NormalizedAsteroidOr
 
     return db_orbit
 
+
 def ingest_asteroid_with_orbit(session, spkid: str) -> Asteroid:
     """
     Fetch, normalize, and insert a single asteroid and its orbit.
@@ -184,6 +188,7 @@ def ingest_asteroid_with_orbit(session, spkid: str) -> Asteroid:
     insert_asteroid_orbit(session, db_asteroid.id, orbit)
 
     return db_asteroid
+
 
 def ingest_asteroids_with_orbits(session, spkids: list[str]) -> list[Asteroid]:
     """

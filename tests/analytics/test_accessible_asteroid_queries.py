@@ -65,11 +65,11 @@ def test_list_most_accessible_asteroids_orders_by_score():
     assert ids[0] == good_id
     assert bad_id in ids
 
-    session.query(AsteroidOrbit).filter(
-        AsteroidOrbit.asteroid_id.in_([good.id, bad.id])
-    ).delete(synchronize_session=False)
-    session.query(Asteroid).filter(
-        Asteroid.nasa_jpl_id.in_([good_id, bad_id])
-    ).delete(synchronize_session=False)
+    session.query(AsteroidOrbit).filter(AsteroidOrbit.asteroid_id.in_([good.id, bad.id])).delete(
+        synchronize_session=False
+    )
+    session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_([good_id, bad_id])).delete(
+        synchronize_session=False
+    )
     session.commit()
     session.close()
