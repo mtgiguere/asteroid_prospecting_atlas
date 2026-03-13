@@ -83,6 +83,9 @@ def insert_asteroid(session, asteroid: NormalizedAsteroid) -> Asteroid:
     db_asteroid = Asteroid(
         name=asteroid.name,
         nasa_jpl_id=asteroid.nasa_jpl_id,
+        absolute_magnitude_h=asteroid.absolute_magnitude_h,
+        estimated_diameter_km=asteroid.estimated_diameter_km,
+        albedo=asteroid.albedo,
     )
 
     session.add(db_asteroid)
