@@ -54,6 +54,7 @@ def test_list_asteroids_with_orbits_returns_joined_rows():
     session.commit()
     session.close()
 
+
 def test_list_most_prospectable_asteroids_orders_by_prospecting_score():
     """
     Ensure asteroid query returns rows ordered by prospecting score,
@@ -117,9 +118,9 @@ def test_list_most_prospectable_asteroids_orders_by_prospecting_score():
     assert results[1]["nasa_jpl_id"] == id_small
     assert "prospecting_score" in results[0]
 
-    session.query(AsteroidOrbit).filter(
-        AsteroidOrbit.asteroid_id.in_([small.id, large.id])
-    ).delete(synchronize_session=False)
+    session.query(AsteroidOrbit).filter(AsteroidOrbit.asteroid_id.in_([small.id, large.id])).delete(
+        synchronize_session=False
+    )
     session.query(Asteroid).filter(Asteroid.nasa_jpl_id.in_([id_small, id_large])).delete(
         synchronize_session=False
     )

@@ -69,6 +69,7 @@ def test_ingest_asteroid_with_orbit():
     session.commit()
     session.close()
 
+
 def test_ingest_asteroid_with_orbit_persists_physical_properties():
     """
     Ensure physical asteroid properties are persisted through the full pipeline.

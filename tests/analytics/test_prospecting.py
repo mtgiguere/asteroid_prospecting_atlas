@@ -25,6 +25,7 @@ def test_prospecting_score_favors_larger_asteroids_with_same_accessibility():
 
     assert large_score < small_score
 
+
 def test_prospecting_score_handles_missing_diameter():
     """
     Missing diameter should not break scoring.
@@ -36,6 +37,7 @@ def test_prospecting_score_handles_missing_diameter():
     )
 
     assert score == 2.0
+
 
 def test_prospecting_score_uses_accessibility_as_primary_penalty():
     """

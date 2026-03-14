@@ -122,6 +122,7 @@ def list_most_accessible_asteroids(
 
     return rows[:limit]
 
+
 def list_most_prospectable_asteroids(
     session,
     limit: int = 10,

@@ -24,6 +24,7 @@ def test_normalize_jpl_asteroid_basic():
     assert result.name == "433 Eros"
     assert result.nasa_jpl_id == "2000433"
 
+
 def test_normalize_jpl_asteroid_extracts_physical_properties():
     jpl_json = {
         "object": {
@@ -45,6 +46,7 @@ def test_normalize_jpl_asteroid_extracts_physical_properties():
     assert asteroid.estimated_diameter_km == 16.84
     assert asteroid.albedo == 0.25
 
+
 def test_normalize_jpl_asteroid_allows_missing_physical_properties():
     jpl_json = {
         "object": {
@@ -60,5 +62,3 @@ def test_normalize_jpl_asteroid_allows_missing_physical_properties():
     assert asteroid.absolute_magnitude_h is None
     assert asteroid.estimated_diameter_km is None
     assert asteroid.albedo is None
-
-    

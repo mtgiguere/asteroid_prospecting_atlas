@@ -39,6 +39,7 @@ def test_insert_single_asteroid():
     session.commit()
     session.close()
 
+
 def test_insert_asteroid_with_physical_properties():
     """
     Verify physical asteroid properties are persisted.

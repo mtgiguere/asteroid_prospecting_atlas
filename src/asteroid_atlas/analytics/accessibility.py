@@ -18,11 +18,7 @@ def calculate_accessibility_score(
     Lower scores indicate orbits more similar to Earth's orbit.
     """
 
-    orbital_similarity = (
-        abs(semi_major_axis_au - 1.0)
-        + eccentricity
-        + (inclination_deg / 180.0)
-    )
+    orbital_similarity = abs(semi_major_axis_au - 1.0) + eccentricity + (inclination_deg / 180.0)
 
     delta_v = estimate_delta_v_au(semi_major_axis_au)
 

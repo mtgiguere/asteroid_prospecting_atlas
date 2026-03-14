@@ -210,4 +210,3 @@ def ingest_asteroids_with_orbits(session, spkids: list[str]) -> list[Asteroid]:
         results.append(asteroid)
 
     return results
-
