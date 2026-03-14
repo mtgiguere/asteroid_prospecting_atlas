@@ -134,7 +134,7 @@ def list_most_prospectable_asteroids(
     Optionally restrict results to a provided set of JPL IDs.
     """
 
-    rows = list_asteroids_with_orbits(session)
+    rows = list_asteroids_with_orbital_metrics(session)
 
     if nasa_jpl_ids is not None:
         allowed = set(nasa_jpl_ids)
@@ -156,6 +156,13 @@ def list_most_prospectable_asteroids(
         rows = filtered
 
     for row in rows:
+        row["estimated_diameter_km"] = (
+            session.query(Asteroid)
+            .filter_by(nasa_jpl_id=row["nasa_jpl_id"])
+            .first()
+            .estimated_diameter_km
+        )
+
         accessibility_score = calculate_accessibility_score(
             row["semi_major_axis_au"],
             row["eccentricity"],
