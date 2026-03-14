@@ -7,6 +7,7 @@ Read/query helpers for asteroid analytics.
 from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
 from asteroid_atlas.analytics.orbital_classification import is_earth_orbit_crossing
 from asteroid_atlas.analytics.orbital_metrics import calculate_perihelion_aphelion
+from asteroid_atlas.analytics.prospecting import calculate_prospecting_score
 from asteroid_atlas.models.asteroid import Asteroid
 from asteroid_atlas.models.asteroid_orbit import AsteroidOrbit
 
@@ -30,6 +31,9 @@ def list_asteroids_with_orbits(session) -> list[dict]:
                 "asteroid_id": asteroid.id,
                 "name": asteroid.name,
                 "nasa_jpl_id": asteroid.nasa_jpl_id,
+                "absolute_magnitude_h": asteroid.absolute_magnitude_h,
+                "estimated_diameter_km": asteroid.estimated_diameter_km,
+                "albedo": asteroid.albedo,
                 "orbit_id": orbit.id,
                 "epoch_mjd": orbit.epoch_mjd,
                 "semi_major_axis_au": orbit.semi_major_axis_au,
@@ -115,5 +119,54 @@ def list_most_accessible_asteroids(
         )
 
     rows.sort(key=lambda r: r["accessibility_score"])
+
+    return rows[:limit]
+
+
+def list_most_prospectable_asteroids(
+    session,
+    limit: int = 10,
+    nasa_jpl_ids: list[str] | None = None,
+    earth_crossing_only: bool = False,
+) -> list[dict]:
+    """
+    Return asteroids ordered by prospecting score, lowest first.
+    Optionally restrict results to a provided set of JPL IDs.
+    """
+
+    rows = list_asteroids_with_orbits(session)
+
+    if nasa_jpl_ids is not None:
+        allowed = set(nasa_jpl_ids)
+        rows = [r for r in rows if r["nasa_jpl_id"] in allowed]
+
+    if earth_crossing_only:
+        filtered = []
+
+        for row in rows:
+            perihelion, aphelion = calculate_perihelion_aphelion(
+                row["semi_major_axis_au"],
+                row["eccentricity"],
+            )
+
+            if is_earth_orbit_crossing(perihelion, aphelion):
+                row["earth_orbit_crossing"] = True
+                filtered.append(row)
+
+        rows = filtered
+
+    for row in rows:
+        accessibility_score = calculate_accessibility_score(
+            row["semi_major_axis_au"],
+            row["eccentricity"],
+            row["inclination_deg"],
+        )
+
+        row["prospecting_score"] = calculate_prospecting_score(
+            accessibility_score=accessibility_score,
+            estimated_diameter_km=row.get("estimated_diameter_km"),
+        )
+
+    rows.sort(key=lambda r: r["prospecting_score"])
 
     return rows[:limit]

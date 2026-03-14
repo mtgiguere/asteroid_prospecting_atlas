@@ -15,6 +15,9 @@ class NormalizedAsteroid:
 
     name: str
     nasa_jpl_id: str
+    absolute_magnitude_h: float | None = None
+    estimated_diameter_km: float | None = None
+    albedo: float | None = None
 
 
 @dataclass

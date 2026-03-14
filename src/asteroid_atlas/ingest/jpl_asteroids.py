@@ -63,9 +63,14 @@ def normalize_jpl_asteroid(jpl_json: dict) -> NormalizedAsteroid:
 
     logger.debug("Normalized asteroid %s", spkid)
 
+    phys_par = jpl_json.get("phys_par", {})
+
     return NormalizedAsteroid(
         name=fullname,
         nasa_jpl_id=spkid,
+        absolute_magnitude_h=float(phys_par["H"]) if phys_par.get("H") else None,
+        estimated_diameter_km=float(phys_par["diameter"]) if phys_par.get("diameter") else None,
+        albedo=float(phys_par["albedo"]) if phys_par.get("albedo") else None,
     )
 
 
@@ -83,6 +88,9 @@ def insert_asteroid(session, asteroid: NormalizedAsteroid) -> Asteroid:
     db_asteroid = Asteroid(
         name=asteroid.name,
         nasa_jpl_id=asteroid.nasa_jpl_id,
+        absolute_magnitude_h=asteroid.absolute_magnitude_h,
+        estimated_diameter_km=asteroid.estimated_diameter_km,
+        albedo=asteroid.albedo,
     )
 
     session.add(db_asteroid)
