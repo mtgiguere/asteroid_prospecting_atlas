@@ -4,10 +4,10 @@ asteroid_queries.py
 Read/query helpers for asteroid analytics.
 """
 
-from asteroid_atlas.analytics.prospecting import calculate_prospecting_score
 from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
 from asteroid_atlas.analytics.orbital_classification import is_earth_orbit_crossing
 from asteroid_atlas.analytics.orbital_metrics import calculate_perihelion_aphelion
+from asteroid_atlas.analytics.prospecting import calculate_prospecting_score
 from asteroid_atlas.models.asteroid import Asteroid
 from asteroid_atlas.models.asteroid_orbit import AsteroidOrbit
 
