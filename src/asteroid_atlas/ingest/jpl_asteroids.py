@@ -63,9 +63,14 @@ def normalize_jpl_asteroid(jpl_json: dict) -> NormalizedAsteroid:
 
     logger.debug("Normalized asteroid %s", spkid)
 
+    phys_par = jpl_json.get("phys_par", {})
+
     return NormalizedAsteroid(
         name=fullname,
         nasa_jpl_id=spkid,
+        absolute_magnitude_h=float(phys_par["H"]) if phys_par.get("H") else None,
+        estimated_diameter_km=float(phys_par["diameter"]) if phys_par.get("diameter") else None,
+        albedo=float(phys_par["albedo"]) if phys_par.get("albedo") else None,
     )
 
 
@@ -205,3 +210,4 @@ def ingest_asteroids_with_orbits(session, spkids: list[str]) -> list[Asteroid]:
         results.append(asteroid)
 
     return results
+
