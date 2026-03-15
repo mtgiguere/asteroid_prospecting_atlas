@@ -10,6 +10,21 @@ The goal is to build a scientifically grounded prospecting system that ranks ast
 * future mission feasibility
 
 ---
+## Project Status
+
+Current capabilities:
+
+- Asteroid ingestion from NASA JPL Small Body Database
+- Normalization and storage in PostgreSQL
+- Orbital metric calculations
+- Accessibility scoring
+- Prospecting score based on physical properties and orbital accessibility
+- FastAPI endpoints for asteroid ranking
+- CI/CD pipeline with automated testing
+
+Current test coverage: **~94%**
+
+Future work will expand the scoring model with additional physics-based metrics.
 
 ## Project Principles
 
@@ -99,6 +114,10 @@ uvicorn asteroid_atlas.api.main:app --reload --app-dir src
 ### 5. Run tests
 
 pytest
+
+### 6. Run visual
+
+python -m asteroid_atlas.visualization.orbit_plot
 
 ---
 
