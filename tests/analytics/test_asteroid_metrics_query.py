@@ -52,3 +52,51 @@ def test_list_asteroids_with_orbital_metrics():
     session.query(Asteroid).filter_by(nasa_jpl_id=unique_id).delete()
     session.commit()
     session.close()
+
+
+def test_list_asteroids_with_orbital_metrics_includes_physical_properties():
+    """
+    Ensure asteroid metric query includes physical asteroid properties.
+    """
+
+    session = SessionLocal()
+    unique_id = f"TEST-{uuid.uuid4()}"
+
+    asteroid = Asteroid(
+        name="Physical Metric Asteroid",
+        nasa_jpl_id=unique_id,
+        absolute_magnitude_h=12.4,
+        estimated_diameter_km=7.8,
+        albedo=0.19,
+    )
+    session.add(asteroid)
+    session.commit()
+
+    orbit = AsteroidOrbit(
+        asteroid_id=asteroid.id,
+        epoch_mjd=60200.5,
+        semi_major_axis_au=1.458,
+        eccentricity=0.223,
+        inclination_deg=10.83,
+        longitude_of_ascending_node_deg=304.4,
+        argument_of_periapsis_deg=178.7,
+        mean_anomaly_deg=42.1,
+        orbital_period_days=643.2,
+    )
+
+    session.add(orbit)
+    session.commit()
+
+    results = list_asteroids_with_orbital_metrics(session)
+
+    match = next((r for r in results if r["nasa_jpl_id"] == unique_id), None)
+
+    assert match is not None
+    assert match["absolute_magnitude_h"] == 12.4
+    assert match["estimated_diameter_km"] == 7.8
+    assert match["albedo"] == 0.19
+
+    session.query(AsteroidOrbit).filter_by(asteroid_id=asteroid.id).delete()
+    session.query(Asteroid).filter_by(nasa_jpl_id=unique_id).delete()
+    session.commit()
+    session.close()

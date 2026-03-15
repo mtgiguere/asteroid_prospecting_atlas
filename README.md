@@ -115,6 +115,10 @@ uvicorn asteroid_atlas.api.main:app --reload --app-dir src
 
 pytest
 
+### 6. Run visual
+
+python -m asteroid_atlas.visualization.orbit_plot
+
 ---
 
 ## API Documentation

@@ -3,8 +3,11 @@ main.py
 """
 
 from fastapi import FastAPI
-from asteroid_atlas.analytics.asteroid_queries import list_most_prospectable_asteroids
-from asteroid_atlas.analytics.asteroid_queries import list_most_accessible_asteroids
+
+from asteroid_atlas.analytics.asteroid_queries import (
+    list_most_accessible_asteroids,
+    list_most_prospectable_asteroids,
+)
 from asteroid_atlas.db.session import SessionLocal
 
 app = FastAPI()
@@ -32,6 +35,7 @@ def get_accessible_asteroids(limit: int = 10, earth_crossing_only: bool = False)
         return results
     finally:
         session.close()
+
 
 @app.get("/asteroids/prospectable")
 def get_prospectable_asteroids(limit: int = 10, earth_crossing_only: bool = False):
