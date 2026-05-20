@@ -1,6 +1,6 @@
 # Asteroid Prospecting Atlas
 
-Asteroid Prospecting Atlas is a Python-based platform for ingesting, normalizing, scoring, and exposing asteroid prospecting data through a documented API.
+Asteroid Prospecting Atlas is a platform for ingesting, normalizing, scoring, and visualizing asteroid prospecting data. It combines a Python/FastAPI backend with a 3D interactive solar system frontend built on CesiumJS.
 
 The goal is to build a scientifically grounded prospecting system that ranks asteroids by mining potential using a combination of:
 
@@ -20,9 +20,10 @@ Current capabilities:
 - Accessibility scoring
 - Prospecting score based on physical properties and orbital accessibility
 - FastAPI endpoints for asteroid ranking
+- 3D interactive solar system visualization (CesiumJS + React)
 - CI/CD pipeline with automated testing
 
-Current test coverage: **~94%**
+Current test coverage: **100%**
 
 Future work will expand the scoring model with additional physics-based metrics.
 
@@ -50,7 +51,6 @@ The first version will:
 Future phases may add:
 
 * launch trajectory estimation
-* orbital visualization
 * mission planning tools
 * asteroid resource simulation
 
@@ -65,6 +65,13 @@ Backend
 * PostgreSQL
 * SQLAlchemy
 * Docker
+
+Frontend
+
+* React 18 + TypeScript
+* CesiumJS (3D WebGL globe/space renderer)
+* Resium (React bindings for Cesium)
+* Vite
 
 Data Processing
 
@@ -111,13 +118,19 @@ pip install -e .[dev]
 
 uvicorn asteroid_atlas.api.main:app --reload --app-dir src
 
-### 5. Run tests
+### 5. Run the frontend
+
+In a separate terminal:
+
+cd frontend
+npm install
+npm run dev
+
+The frontend dev server starts at http://localhost:5173 and expects the API on http://localhost:8000.
+
+### 6. Run tests
 
 pytest
-
-### 6. Run visual
-
-python -m asteroid_atlas.visualization.orbit_plot
 
 ---
 
@@ -135,6 +148,7 @@ asteroid_prospecting_atlas/
 
 .github/workflows/ — CI/CD pipeline configuration
 docs/ — architecture, data sources, scoring design
+frontend/ — React/CesiumJS 3D visualization frontend
 src/asteroid_atlas/ — main application source code
 tests/ — unit and end-to-end tests
 docker-compose.yml — PostgreSQL container setup

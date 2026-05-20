@@ -75,3 +75,27 @@ These asteroids are important for both planetary defense and mission planning.
 A heuristic value estimating how similar an asteroid's orbit is to Earth's.
 
 Lower scores indicate orbits that are easier to reach from Earth.
+
+---
+
+## Prospecting Score
+
+A composite score combining orbital accessibility with physical characteristics (estimated diameter, albedo, absolute magnitude) to rank asteroids by their potential value as mining or exploration targets.
+
+Higher scores indicate more promising candidates.
+
+---
+
+## Longitude of Ascending Node (Ω)
+
+The angle in the ecliptic plane between a reference direction and the point where an asteroid's orbit crosses the ecliptic from south to north.
+
+Together with the argument of periapsis, it defines the orientation of the orbit in 3D space.
+
+---
+
+## Argument of Periapsis (ω)
+
+The angle between the ascending node and the perihelion point, measured in the plane of the orbit.
+
+It determines which direction in the orbit the closest approach to the Sun occurs.

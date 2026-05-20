@@ -13,7 +13,8 @@ The system currently supports:
 • Storing asteroid records in PostgreSQL  
 • Calculating orbital characteristics  
 • Identifying Earth-crossing asteroids  
-• Ranking asteroids by accessibility  
+• Ranking asteroids by accessibility and prospecting score  
+• Visualizing asteroid orbits in an interactive 3D solar system  
 
 ## Why This Project Exists
 
@@ -34,7 +35,8 @@ The Atlas can currently:
 1. Ingest real asteroid data from NASA
 2. Calculate orbital metrics
 3. Classify asteroid orbits
-4. Rank asteroids by accessibility
+4. Rank asteroids by accessibility and prospecting score
 5. Provide an API for querying results
+6. Render asteroid orbits in a 3D interactive solar system (CesiumJS frontend)
 
 Future versions will include more detailed orbital analysis and mission cost estimates.
