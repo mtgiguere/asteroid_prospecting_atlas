@@ -2,8 +2,24 @@
 test_jpl_orbit_normalization.py
 """
 
+import pytest
+
 from asteroid_atlas.ingest.jpl_asteroids import normalize_jpl_orbit
 from asteroid_atlas.ingest.models import NormalizedAsteroidOrbit
+
+
+def test_normalize_jpl_orbit_raises_when_orbit_missing():
+    """Ensure ValueError is raised when 'orbit' key is absent."""
+
+    with pytest.raises(ValueError, match="Missing 'orbit'"):
+        normalize_jpl_orbit({})
+
+
+def test_normalize_jpl_orbit_raises_when_elements_missing():
+    """Ensure ValueError is raised when 'elements' key is absent from orbit."""
+
+    with pytest.raises(ValueError, match="Missing 'elements'"):
+        normalize_jpl_orbit({"orbit": {"epoch": "60200.5"}})
 
 
 def test_normalize_jpl_orbit_basic():

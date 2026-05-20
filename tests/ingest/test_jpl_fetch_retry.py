@@ -30,3 +30,23 @@ def test_fetch_jpl_asteroid_retries_once_then_succeeds():
         result = fetch_jpl_asteroid("123")
 
     assert result["object"]["fullname"] == "Retry Asteroid"
+
+
+def test_fetch_jpl_asteroid_raises_after_all_retries_exhausted():
+    """
+    Ensure the exception propagates when all 3 attempts fail.
+    """
+
+    import pytest
+
+    failure = requests.exceptions.RequestException("network failure")
+
+    with (
+        patch(
+            "asteroid_atlas.ingest.jpl_asteroids.requests.get",
+            side_effect=[failure, failure, failure],
+        ),
+        patch("asteroid_atlas.ingest.jpl_asteroids.time.sleep"),
+    ):
+        with pytest.raises(requests.exceptions.RequestException):
+            fetch_jpl_asteroid("123")
