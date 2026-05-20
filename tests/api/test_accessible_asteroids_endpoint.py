@@ -114,6 +114,48 @@ def test_prospectable_asteroids_endpoint_accepts_earth_crossing_filter():
         assert row["earth_orbit_crossing"] is True
 
 
+def test_orbits_endpoint_returns_list():
+    """Ensure /asteroids/orbits returns a list."""
+
+    response = client.get("/asteroids/orbits?limit=5")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+def test_orbits_endpoint_includes_full_orbital_elements():
+    """Ensure /asteroids/orbits response includes all fields needed for 3D rendering."""
+
+    response = client.get("/asteroids/orbits?limit=1")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    if not data:
+        return
+
+    row = data[0]
+    expected = {
+        "longitude_of_ascending_node_deg",
+        "argument_of_periapsis_deg",
+        "prospecting_score",
+        "accessibility_score",
+        "perihelion_au",
+        "aphelion_au",
+    }
+    assert expected.issubset(set(row.keys()))
+
+
+def test_orbits_endpoint_earth_crossing_filter():
+    """Ensure /asteroids/orbits earth_crossing_only filter works."""
+
+    response = client.get("/asteroids/orbits?earth_crossing_only=true")
+
+    assert response.status_code == 200
+    for row in response.json():
+        assert row["earth_orbit_crossing"] is True
+
+
 def test_prospectable_asteroids_response_schema():
     """
     Ensure prospectable endpoint rows contain expected fields.

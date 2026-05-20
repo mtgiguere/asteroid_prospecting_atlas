@@ -90,6 +90,61 @@ def list_asteroids_with_orbital_metrics(session) -> list[dict]:
     return results
 
 
+def list_asteroids_for_visualization(
+    session,
+    limit: int = 200,
+    earth_crossing_only: bool = False,
+    nasa_jpl_ids: list[str] | None = None,
+) -> list[dict]:
+    """
+    Full orbital elements + computed scores for 3D visualization.
+    Includes longitude_of_ascending_node_deg and argument_of_periapsis_deg
+    needed to render orbit paths in 3D space.
+    """
+
+    rows = list_asteroids_with_orbits(session)
+
+    if nasa_jpl_ids is not None:
+        allowed = set(nasa_jpl_ids)
+        rows = [r for r in rows if r["nasa_jpl_id"] in allowed]
+
+    result = []
+
+    for row in rows:
+        perihelion, aphelion = calculate_perihelion_aphelion(
+            row["semi_major_axis_au"], row["eccentricity"]
+        )
+        earth_crossing = is_earth_orbit_crossing(perihelion, aphelion)
+
+        if earth_crossing_only and not earth_crossing:
+            continue
+
+        accessibility_score = calculate_accessibility_score(
+            row["semi_major_axis_au"],
+            row["eccentricity"],
+            row["inclination_deg"],
+        )
+
+        prospecting_score = calculate_prospecting_score(
+            accessibility_score=accessibility_score,
+            estimated_diameter_km=row.get("estimated_diameter_km"),
+        )
+
+        result.append(
+            {
+                **row,
+                "perihelion_au": round(perihelion, 6),
+                "aphelion_au": round(aphelion, 6),
+                "earth_orbit_crossing": earth_crossing,
+                "accessibility_score": round(accessibility_score, 4),
+                "prospecting_score": round(prospecting_score, 4),
+            }
+        )
+
+    result.sort(key=lambda r: r["prospecting_score"])
+    return result[:limit]
+
+
 def list_earth_crossing_asteroids(session) -> list[dict]:
     rows = list_asteroids_with_orbital_metrics(session)
     return [row for row in rows if row["earth_orbit_crossing"]]
