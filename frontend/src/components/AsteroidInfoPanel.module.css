@@ -1,0 +1,168 @@
+.panel {
+  position: absolute;
+  top: 57px;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  z-index: 10;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--panel-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+}
+
+.jplId {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 0 0 8px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.closeBtn:hover {
+  color: var(--text-primary);
+}
+
+.badge {
+  margin: 10px 16px 0;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 200, 0, 0.4);
+  background: rgba(255, 200, 0, 0.08);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #ffd200;
+  display: inline-block;
+}
+
+.section {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+}
+
+.sectionTitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.rowLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.rowValue {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.scoreLine {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.scoreLabel {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+}
+
+.scoreBarWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scoreBarTrack {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.scoreBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.scoreValue {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  min-width: 48px;
+  text-align: right;
+}
+
+.legend {
+  padding: 14px 16px;
+  margin-top: auto;
+}
+
+.legendTitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.legendBar {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #00ff8c, #ffd200, #ff321e);
+  margin-bottom: 4px;
+}
+
+.legendLabels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
