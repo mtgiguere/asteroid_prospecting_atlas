@@ -1,4 +1,4 @@
-import type { AsteroidOrbit, ScoreKey } from '../types'
+import type { AsteroidOrbit } from '../types'
 import { scoreToHex } from '../utils/colorScale'
 import { ResourceCard } from './ResourceCard'
 import styles from './AsteroidInfoPanel.module.css'
@@ -6,7 +6,6 @@ import styles from './AsteroidInfoPanel.module.css'
 interface Props {
   asteroid: AsteroidOrbit
   allAsteroids: AsteroidOrbit[]
-  scoreKey: ScoreKey
   onClose: () => void
 }
 
@@ -32,10 +31,7 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function AsteroidInfoPanel({ asteroid, allAsteroids, scoreKey, onClose }: Props) {
-  const scores = allAsteroids.map((a) => a[scoreKey])
-  const minScore = Math.min(...scores)
-  const maxScore = Math.max(...scores)
+export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
   const allProspecting = allAsteroids.map((a) => a.prospecting_score)
   const allAccess = allAsteroids.map((a) => a.accessibility_score)
 

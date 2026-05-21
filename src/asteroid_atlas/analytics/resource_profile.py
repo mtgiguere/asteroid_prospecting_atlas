@@ -10,29 +10,27 @@ import math
 from dataclasses import dataclass, field
 
 # ── Spectral type → group mapping (SMASS/Bus-DeMeo prefixes) ─────────────────
-_C_PREFIXES = ("C",)  # C, Ch, Cg, Cgh, Cb, Cgh
-_S_PREFIXES = ("S", "Q", "A", "L", "K")  # S, Sq, Sr, Sa, Sk, Sl, Q, A, L, K
-_M_PREFIXES = ("M", "E", "P")
-_X_PREFIXES = ("X",)  # Xc, Xe, Xk — ambiguous metallic/enstatite/primitive
+# Order matters: longer/more-specific prefixes must come before single-char ones
+# if any single-char prefix is a prefix of another (none currently, but kept explicit).
+_PREFIX_TO_GROUP: list[tuple[str, str]] = [
+    ("C", "C"),
+    ("S", "S"),
+    ("Q", "S"),
+    ("A", "S"),
+    ("L", "S"),
+    ("K", "S"),
+    ("M", "M"),
+    ("E", "M"),
+    ("P", "M"),
+    ("X", "X"),
+]
 
 
 def _classify(spectral_type: str | None) -> str:
     if spectral_type is None:
         return "unknown"
     t = spectral_type.strip()
-    for prefix in _C_PREFIXES:
-        if t.startswith(prefix):
-            return "C"
-    for prefix in _S_PREFIXES:
-        if t.startswith(prefix):
-            return "S"
-    for prefix in _M_PREFIXES:
-        if t.startswith(prefix):
-            return "M"
-    for prefix in _X_PREFIXES:
-        if t.startswith(prefix):
-            return "X"
-    return "other"
+    return next((group for prefix, group in _PREFIX_TO_GROUP if t.startswith(prefix)), "other")
 
 
 # ── Per-group physical parameters ────────────────────────────────────────────

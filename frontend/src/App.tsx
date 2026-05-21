@@ -5,7 +5,7 @@ import { AsteroidInfoPanel } from './components/AsteroidInfoPanel'
 import { Controls } from './components/Controls'
 import { NavigationSidebar } from './components/NavigationSidebar'
 import { useAsteroids } from './hooks/useAsteroids'
-import type { AsteroidOrbit, FlyTarget, ScoreKey, ColorMode } from './types'
+import type { AsteroidOrbit, FlyTarget, ColorMode } from './types'
 
 export default function App() {
   const viewerRef = useRef<SolarSystemViewerHandle>(null)
@@ -13,7 +13,6 @@ export default function App() {
   const [limit, setLimit] = useState(500)
   const [earthCrossingOnly, setEarthCrossingOnly] = useState(false)
   const [colorMode, setColorMode] = useState<ColorMode>('spectral_type')
-  const [scoreKey, setScoreKey] = useState<ScoreKey>('prospecting_score')
   const [selected, setSelected] = useState<AsteroidOrbit | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
@@ -54,13 +53,11 @@ export default function App() {
           limit={limit}
           earthCrossingOnly={earthCrossingOnly}
           colorMode={colorMode}
-          scoreKey={scoreKey}
           asteroidCount={asteroids.length}
           loading={loading}
           onLimitChange={setLimit}
           onEarthCrossingChange={setEarthCrossingOnly}
           onColorModeChange={setColorMode}
-          onScoreKeyChange={setScoreKey}
         />
 
         {hoveredId && (
@@ -73,7 +70,6 @@ export default function App() {
             <AsteroidInfoPanel
               asteroid={selected}
               allAsteroids={asteroids}
-              scoreKey={scoreKey}
               onClose={() => setSelected(null)}
             />
           </>

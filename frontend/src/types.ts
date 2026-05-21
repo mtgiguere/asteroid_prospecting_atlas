@@ -33,8 +33,6 @@ export interface AsteroidOrbit {
   resource_profile: ResourceProfile
 }
 
-export type ScoreKey = 'prospecting_score' | 'accessibility_score'
-
 export type ColorMode = 'spectral_type' | 'prospecting_score' | 'accessibility_score'
 
 export type FlyTarget =

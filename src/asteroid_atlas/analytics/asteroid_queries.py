@@ -111,7 +111,7 @@ def list_asteroids_for_visualization(
         allowed = set(nasa_jpl_ids)
         rows = [r for r in rows if r["nasa_jpl_id"] in allowed]
 
-    result = []
+    scored = []
 
     for row in rows:
         perihelion, aphelion = calculate_perihelion_aphelion(
@@ -133,12 +133,7 @@ def list_asteroids_for_visualization(
             estimated_diameter_km=row.get("estimated_diameter_km"),
         )
 
-        rp = compute_resource_profile(
-            spectral_type=row.get("spectral_type"),
-            diameter_km=row.get("estimated_diameter_km"),
-        )
-
-        result.append(
+        scored.append(
             {
                 **row,
                 "perihelion_au": round(perihelion, 6),
@@ -146,21 +141,29 @@ def list_asteroids_for_visualization(
                 "earth_orbit_crossing": earth_crossing,
                 "accessibility_score": round(accessibility_score, 4),
                 "prospecting_score": round(prospecting_score, 4),
-                "resource_profile": {
-                    "type_group": rp.type_group,
-                    "type_label": rp.type_label,
-                    "primary_resources": rp.primary_resources,
-                    "estimated_mass_kg": rp.estimated_mass_kg,
-                    "water_mass_kg": rp.water_mass_kg,
-                    "metal_mass_kg": rp.metal_mass_kg,
-                    "pgm_mass_kg": rp.pgm_mass_kg,
-                    "why_go_here": rp.why_go_here,
-                },
             }
         )
 
-    result.sort(key=lambda r: r["prospecting_score"])
-    return result[:limit]
+    scored.sort(key=lambda r: r["prospecting_score"])
+    top = scored[:limit]
+
+    for row in top:
+        rp = compute_resource_profile(
+            spectral_type=row.get("spectral_type"),
+            diameter_km=row.get("estimated_diameter_km"),
+        )
+        row["resource_profile"] = {
+            "type_group": rp.type_group,
+            "type_label": rp.type_label,
+            "primary_resources": rp.primary_resources,
+            "estimated_mass_kg": rp.estimated_mass_kg,
+            "water_mass_kg": rp.water_mass_kg,
+            "metal_mass_kg": rp.metal_mass_kg,
+            "pgm_mass_kg": rp.pgm_mass_kg,
+            "why_go_here": rp.why_go_here,
+        }
+
+    return top
 
 
 def list_earth_crossing_asteroids(session) -> list[dict]:
