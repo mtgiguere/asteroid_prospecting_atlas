@@ -44,7 +44,9 @@
       "Bash(git log *)",
       "Bash(python -m pytest tests/ingest/test_jpl_bulk_normalization.py -q)",
       "Bash(python -m pytest tests/ingest/test_jpl_bulk_normalization.py -q --no-cov)",
-      "Bash(python *)"
+      "Bash(python *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)"
     ]
   }
 }
