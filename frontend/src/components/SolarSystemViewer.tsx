@@ -157,13 +157,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       PLANETS.forEach((p) => {
         const rad = (p.angleDeg * Math.PI) / 180
         const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
-        planetPoints.add({
-          position: pos,
-          color: Color.fromCssColorString(p.color),
-          pixelSize: p.pointSize,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          id: `planet:${p.id}`,
-        })
+        if (p.id !== 'earth' && p.id !== 'jupiter') {
+          planetPoints.add({
+            position: pos,
+            color: Color.fromCssColorString(p.color),
+            pixelSize: p.pointSize,
+            disableDepthTestDistance: Number.POSITIVE_INFINITY,
+            id: `planet:${p.id}`,
+          })
+        }
         planetLabels.add({
           position: pos,
           text: p.name,
@@ -205,6 +207,42 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           scene.primitives.remove(planetPoints)
           scene.primitives.remove(planetLabels)
           scene.primitives.remove(beltLines)
+        }
+      }
+    }, [viewer])
+
+    // Earth + Jupiter — multi-layer glows; excluded from generic planetPoints above
+    useEffect(() => {
+      if (!viewer) return
+
+      const scene = viewer.scene
+
+      const earth = PLANETS.find((p) => p.id === 'earth')!
+      const earthRad = (earth.angleDeg * Math.PI) / 180
+      const earthPos = new Cartesian3(Math.cos(earthRad) * earth.sma * AU_M, Math.sin(earthRad) * earth.sma * AU_M, 0)
+
+      const earthPoints = new PointPrimitiveCollection()
+      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#1a4a8a').withAlpha(0.20), pixelSize: 110, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#2266bb').withAlpha(0.45), pixelSize: 55,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#55aaee').withAlpha(0.80), pixelSize: 30,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#cceeff'),                 pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      scene.primitives.add(earthPoints)
+
+      const jupiter = PLANETS.find((p) => p.id === 'jupiter')!
+      const jupiterRad = (jupiter.angleDeg * Math.PI) / 180
+      const jupiterPos = new Cartesian3(Math.cos(jupiterRad) * jupiter.sma * AU_M, Math.sin(jupiterRad) * jupiter.sma * AU_M, 0)
+
+      const jupiterPoints = new PointPrimitiveCollection()
+      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#7a5c33').withAlpha(0.18), pixelSize: 120, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#aa8855').withAlpha(0.42), pixelSize: 65,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#ccaa77').withAlpha(0.80), pixelSize: 36,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#eecc99'),                 pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      scene.primitives.add(jupiterPoints)
+
+      return () => {
+        if (!viewer.isDestroyed()) {
+          scene.primitives.remove(earthPoints)
+          scene.primitives.remove(jupiterPoints)
         }
       }
     }, [viewer])
@@ -310,7 +348,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       handler.setInputAction(
         (event: { position: { x: number; y: number } }) => {
-          const picked = viewer.scene.pick(event.position)
+          const picked = viewer.scene.pick(new Cartesian2(event.position.x, event.position.y))
           if (!defined(picked)) {
             onSelect(null)
             return
@@ -339,7 +377,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       handler.setInputAction(
         (event: { endPosition: { x: number; y: number } }) => {
-          const picked = viewer.scene.pick(event.endPosition)
+          const picked = viewer.scene.pick(new Cartesian2(event.endPosition.x, event.endPosition.y))
           if (defined(picked) && typeof picked.id === 'string' && !picked.id.startsWith('planet:')) {
             onHover(picked.id)
           } else {
