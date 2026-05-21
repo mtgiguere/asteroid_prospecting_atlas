@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { SolarSystemViewer } from './components/SolarSystemViewer'
 import type { SolarSystemViewerHandle } from './components/SolarSystemViewer'
 import { AsteroidInfoPanel } from './components/AsteroidInfoPanel'
 import { Controls } from './components/Controls'
 import { NavigationSidebar } from './components/NavigationSidebar'
 import { SpectralTypeLegend } from './components/SpectralTypeLegend'
+import { TimeControls } from './components/TimeControls'
 import { useAsteroids } from './hooks/useAsteroids'
+import { todayMjd } from './utils/orbitMechanics'
 import type { AsteroidOrbit, FlyTarget, ColorMode } from './types'
 
 export default function App() {
@@ -16,8 +18,17 @@ export default function App() {
   const [colorMode, setColorMode] = useState<ColorMode>('spectral_type')
   const [selected, setSelected] = useState<AsteroidOrbit | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [currentMjd, setCurrentMjd] = useState(() => todayMjd())
+  const [playing, setPlaying] = useState(false)
+  const [speedDays, setSpeedDays] = useState(1)
 
   const { asteroids, loading, error } = useAsteroids({ limit, earthCrossingOnly })
+
+  useEffect(() => {
+    if (!playing) return
+    const id = setInterval(() => setCurrentMjd((m) => m + speedDays), 50)
+    return () => clearInterval(id)
+  }, [playing, speedDays])
 
   const handleSelect = useCallback((asteroid: AsteroidOrbit | null) => {
     setSelected(asteroid)
@@ -46,11 +57,20 @@ export default function App() {
           selectedId={selected?.nasa_jpl_id ?? null}
           hoveredId={hoveredId}
           colorMode={colorMode}
+          currentMjd={currentMjd}
           onSelect={handleSelect}
           onHover={setHoveredId}
         />
 
         <SpectralTypeLegend colorMode={colorMode} panelOpen={selected !== null} />
+        <TimeControls
+          currentMjd={currentMjd}
+          playing={playing}
+          speedDays={speedDays}
+          onMjdChange={setCurrentMjd}
+          onPlayToggle={() => setPlaying((p) => !p)}
+          onSpeedChange={setSpeedDays}
+        />
 
         <Controls
           limit={limit}
