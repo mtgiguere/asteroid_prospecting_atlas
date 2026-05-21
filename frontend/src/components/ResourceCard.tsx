@@ -1,6 +1,6 @@
 import type { ResourceProfile } from '../types'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
-import { formatMass } from '../utils/formatters'
+import { formatMass, resourceEquivalency } from '../utils/formatters'
 
 interface Props {
   profile: ResourceProfile
@@ -81,6 +81,28 @@ const S = {
   },
 }
 
+function EquivalenciesSection({ profile }: { profile: ResourceProfile }) {
+  const entries = [
+    { label: 'Water',  eq: resourceEquivalency('water',  profile.water_mass_kg),  testId: 'equivalency-water'  },
+    { label: 'Metals', eq: resourceEquivalency('metals', profile.metal_mass_kg),  testId: 'equivalency-metals' },
+    { label: 'PGMs',   eq: resourceEquivalency('pgms',   profile.pgm_mass_kg),    testId: 'equivalency-pgms'   },
+  ].filter(({ eq }) => eq !== null)
+
+  if (entries.length === 0) return null
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={S.resourcesLabel}>In Context</div>
+      {entries.map(({ label, eq, testId }) => (
+        <div key={label} style={{ fontSize: 9, color: '#556688', padding: '2px 0', lineHeight: 1.5 }}>
+          <span style={{ color: '#3a5a8f', marginRight: 5 }}>{label}</span>
+          <span data-testid={testId}>{eq}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function ResourceCard({ profile }: Props) {
   const typeColor = spectralTypeGroupToHex(profile.type_group)
 
@@ -99,24 +121,27 @@ export function ResourceCard({ profile }: Props) {
       ))}
 
       {profile.estimated_mass_kg !== null && (
-        <div style={S.massGrid}>
-          <div style={S.massItem}>
-            <div style={S.massLabel}>Water</div>
-            <div style={S.massValue}>{formatMass(profile.water_mass_kg)}</div>
+        <>
+          <div style={S.massGrid}>
+            <div style={S.massItem}>
+              <div style={S.massLabel}>Water</div>
+              <div style={S.massValue}>{formatMass(profile.water_mass_kg)}</div>
+            </div>
+            <div style={S.massItem}>
+              <div style={S.massLabel}>Metals</div>
+              <div style={S.massValue}>{formatMass(profile.metal_mass_kg)}</div>
+            </div>
+            <div style={S.massItem}>
+              <div style={S.massLabel}>PGMs</div>
+              <div style={S.massValue}>{formatMass(profile.pgm_mass_kg)}</div>
+            </div>
+            <div style={S.massItem}>
+              <div style={S.massLabel}>Total mass</div>
+              <div style={S.massValue}>{formatMass(profile.estimated_mass_kg)}</div>
+            </div>
           </div>
-          <div style={S.massItem}>
-            <div style={S.massLabel}>Metals</div>
-            <div style={S.massValue}>{formatMass(profile.metal_mass_kg)}</div>
-          </div>
-          <div style={S.massItem}>
-            <div style={S.massLabel}>PGMs</div>
-            <div style={S.massValue}>{formatMass(profile.pgm_mass_kg)}</div>
-          </div>
-          <div style={S.massItem}>
-            <div style={S.massLabel}>Total mass</div>
-            <div style={S.massValue}>{formatMass(profile.estimated_mass_kg)}</div>
-          </div>
-        </div>
+          <EquivalenciesSection profile={profile} />
+        </>
       )}
     </div>
   )

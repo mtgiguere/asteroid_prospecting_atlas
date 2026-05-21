@@ -46,6 +46,38 @@ const YORP = makeAsteroid({
   prospecting_score: 0.33,
 })
 
+const C_TYPE = makeAsteroid({
+  asteroid_id: 3,
+  name: '101955 Bennu',
+  nasa_jpl_id: '2101955',
+  resource_profile: {
+    type_group: 'C',
+    type_label: 'Carbonaceous (C-type)',
+    primary_resources: ['Water', 'Organics'],
+    estimated_mass_kg: 7.3e10,
+    water_mass_kg: 1e9,
+    metal_mass_kg: 0,
+    pgm_mass_kg: 0,
+    why_go_here: 'Water ice for fuel.',
+  },
+})
+
+const M_TYPE = makeAsteroid({
+  asteroid_id: 4,
+  name: '16 Psyche',
+  nasa_jpl_id: '2000016',
+  resource_profile: {
+    type_group: 'M',
+    type_label: 'Metallic (M-type)',
+    primary_resources: ['Iron', 'Nickel', 'Platinum'],
+    estimated_mass_kg: 2.27e19,
+    water_mass_kg: 0,
+    metal_mass_kg: 2e19,
+    pgm_mass_kg: 1e15,
+    why_go_here: 'Enormous metal reserves.',
+  },
+})
+
 describe('NavigationSidebar', () => {
   it('renders Sol', () => {
     render(<NavigationSidebar asteroids={[]} onFlyTo={vi.fn()} />)
@@ -125,5 +157,67 @@ describe('NavigationSidebar', () => {
     await userEvent.hover(screen.getByText(/433 Eros/i))
     await userEvent.unhover(screen.getByText(/433 Eros/i))
     expect(onHover).toHaveBeenLastCalledWith(null)
+  })
+
+  describe('resource filter', () => {
+    const all = [makeAsteroid(), C_TYPE, M_TYPE]
+
+    it('renders All, Water, Metals, PGMs filter buttons', () => {
+      render(<NavigationSidebar asteroids={all} onFlyTo={vi.fn()} />)
+      expect(screen.getByRole('button', { name: /all/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /water/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /metals/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /pgms/i })).toBeInTheDocument()
+    })
+
+    it('shows all asteroids by default', () => {
+      render(<NavigationSidebar asteroids={all} onFlyTo={vi.fn()} />)
+      expect(screen.getByText(/433 Eros/i)).toBeInTheDocument()
+      expect(screen.getByText(/Bennu/i)).toBeInTheDocument()
+      expect(screen.getByText(/Psyche/i)).toBeInTheDocument()
+    })
+
+    it('Water filter shows only C-type asteroids', async () => {
+      render(<NavigationSidebar asteroids={all} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /water/i }))
+      expect(screen.queryByText(/433 Eros/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/Bennu/i)).toBeInTheDocument()
+      expect(screen.queryByText(/Psyche/i)).not.toBeInTheDocument()
+    })
+
+    it('Metals filter shows S-type and M-type asteroids', async () => {
+      render(<NavigationSidebar asteroids={all} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /metals/i }))
+      expect(screen.getByText(/433 Eros/i)).toBeInTheDocument()
+      expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/Psyche/i)).toBeInTheDocument()
+    })
+
+    it('PGMs filter shows only M-type asteroids', async () => {
+      render(<NavigationSidebar asteroids={all} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /pgms/i }))
+      expect(screen.queryByText(/433 Eros/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/Psyche/i)).toBeInTheDocument()
+    })
+
+    it('All button resets filter to show all asteroids', async () => {
+      render(<NavigationSidebar asteroids={all} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /water/i }))
+      await userEvent.click(screen.getByRole('button', { name: /all/i }))
+      expect(screen.getByText(/433 Eros/i)).toBeInTheDocument()
+      expect(screen.getByText(/Bennu/i)).toBeInTheDocument()
+      expect(screen.getByText(/Psyche/i)).toBeInTheDocument()
+    })
+
+    it('resource filter and name search apply together', async () => {
+      const eros2 = makeAsteroid({ asteroid_id: 5, name: 'Eros Clone', nasa_jpl_id: '9999999' })
+      render(<NavigationSidebar asteroids={[makeAsteroid(), eros2, C_TYPE]} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /metals/i }))
+      await userEvent.type(screen.getByRole('searchbox'), 'Clone')
+      expect(screen.queryByText(/433 Eros/i)).not.toBeInTheDocument()
+      expect(screen.getByText(/Eros Clone/i)).toBeInTheDocument()
+      expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
+    })
   })
 })

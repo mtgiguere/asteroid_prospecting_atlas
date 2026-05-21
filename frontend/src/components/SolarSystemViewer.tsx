@@ -19,6 +19,7 @@ import {
 import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
 import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
+import { positionAtMjd } from '../utils/orbitMechanics'
 import { scoreToHex } from '../utils/colorScale'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
 
@@ -31,12 +32,13 @@ interface Props {
   selectedId: string | null
   hoveredId: string | null
   colorMode: ColorMode
+  currentMjd: number
   onSelect: (asteroid: AsteroidOrbit | null) => void
   onHover: (id: string | null) => void
 }
 
 export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
-  function SolarSystemViewer({ asteroids, selectedId, hoveredId, colorMode, onSelect, onHover }, ref) {
+  function SolarSystemViewer({ asteroids, selectedId, hoveredId, colorMode, currentMjd, onSelect, onHover }, ref) {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
 
     const handleRef = useCallback((r: CesiumComponentRef<CesiumViewer> | null) => {
@@ -244,15 +246,23 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           })
         }
 
-        if (positions.length > 0) {
-          asteroidPoints.add({
-            position: positions[0],
-            color: isHovered ? Color.WHITE : color,
-            pixelSize: isSelected ? 10 : isHovered ? 9 : 5,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            id: asteroid.nasa_jpl_id,
-          })
-        }
+        const rawPos = positionAtMjd({
+          semiMajorAxisAu: asteroid.semi_major_axis_au,
+          eccentricity: asteroid.eccentricity,
+          inclinationDeg: asteroid.inclination_deg,
+          lonAscNodeDeg: asteroid.longitude_of_ascending_node_deg,
+          argPeriapsisDeg: asteroid.argument_of_periapsis_deg,
+          epochMjd: asteroid.epoch_mjd,
+          meanAnomalyDeg: asteroid.mean_anomaly_deg,
+          periodDays: asteroid.orbital_period_days,
+        }, currentMjd)
+        asteroidPoints.add({
+          position: new Cartesian3(rawPos.x, rawPos.y, rawPos.z),
+          color: isHovered ? Color.WHITE : color,
+          pixelSize: isSelected ? 10 : isHovered ? 9 : 5,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+          id: asteroid.nasa_jpl_id,
+        })
       })
 
       scene.primitives.add(orbitLines)
@@ -264,7 +274,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           scene.primitives.remove(asteroidPoints)
         }
       }
-    }, [viewer, asteroids, selectedId, hoveredId, colorMode])
+    }, [viewer, asteroids, selectedId, hoveredId, colorMode, currentMjd])
 
     // Click picking — select asteroid or planet, then flyTo
     useEffect(() => {
