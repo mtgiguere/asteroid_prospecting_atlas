@@ -18,6 +18,7 @@ class NormalizedAsteroid:
     absolute_magnitude_h: float | None = None
     estimated_diameter_km: float | None = None
     albedo: float | None = None
+    spectral_type: str | None = None
 
 
 @dataclass

@@ -82,6 +82,9 @@ def insert_asteroid(session, asteroid: NormalizedAsteroid) -> Asteroid:
     existing = session.query(Asteroid).filter_by(nasa_jpl_id=asteroid.nasa_jpl_id).first()
 
     if existing:
+        if existing.spectral_type is None and asteroid.spectral_type is not None:
+            existing.spectral_type = asteroid.spectral_type
+            session.commit()
         logger.info("Asteroid %s already exists", asteroid.nasa_jpl_id)
         return existing
 
@@ -91,6 +94,7 @@ def insert_asteroid(session, asteroid: NormalizedAsteroid) -> Asteroid:
         absolute_magnitude_h=asteroid.absolute_magnitude_h,
         estimated_diameter_km=asteroid.estimated_diameter_km,
         albedo=asteroid.albedo,
+        spectral_type=asteroid.spectral_type,
     )
 
     session.add(db_asteroid)

@@ -1,3 +1,14 @@
+export interface ResourceProfile {
+  type_group: string
+  type_label: string
+  primary_resources: string[]
+  estimated_mass_kg: number | null
+  water_mass_kg: number | null
+  metal_mass_kg: number | null
+  pgm_mass_kg: number | null
+  why_go_here: string
+}
+
 export interface AsteroidOrbit {
   asteroid_id: number
   name: string
@@ -5,6 +16,7 @@ export interface AsteroidOrbit {
   absolute_magnitude_h: number | null
   estimated_diameter_km: number | null
   albedo: number | null
+  spectral_type: string | null
   epoch_mjd: number
   semi_major_axis_au: number
   eccentricity: number
@@ -18,9 +30,10 @@ export interface AsteroidOrbit {
   earth_orbit_crossing: boolean
   accessibility_score: number
   prospecting_score: number
+  resource_profile: ResourceProfile
 }
 
-export type ScoreKey = 'prospecting_score' | 'accessibility_score'
+export type ColorMode = 'spectral_type' | 'prospecting_score' | 'accessibility_score'
 
 export type FlyTarget =
   | { kind: 'sol' }

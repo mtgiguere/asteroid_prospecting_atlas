@@ -134,3 +134,49 @@ def test_list_asteroids_for_visualization_sorted_by_prospecting_score():
 
     scores = [r["prospecting_score"] for r in results]
     assert scores == sorted(scores)
+
+
+def test_list_asteroids_for_visualization_includes_resource_profile():
+    session = SessionLocal()
+    jpl_id = f"TEST-VIZ-RP-{uuid.uuid4()}"
+
+    asteroid = Asteroid(
+        name="Resource Profile Test",
+        nasa_jpl_id=jpl_id,
+        estimated_diameter_km=2.0,
+        spectral_type="C",
+    )
+    session.add(asteroid)
+    session.commit()
+
+    orbit = AsteroidOrbit(
+        asteroid_id=asteroid.id,
+        epoch_mjd=60200.5,
+        semi_major_axis_au=1.2,
+        eccentricity=0.10,
+        inclination_deg=5.0,
+        longitude_of_ascending_node_deg=100.0,
+        argument_of_periapsis_deg=50.0,
+        mean_anomaly_deg=20.0,
+        orbital_period_days=480.0,
+    )
+    session.add(orbit)
+    session.commit()
+
+    results = list_asteroids_for_visualization(session, limit=500, nasa_jpl_ids=[jpl_id])
+
+    session.delete(orbit)
+    session.commit()
+    session.delete(asteroid)
+    session.commit()
+    session.close()
+
+    row = next(r for r in results if r["nasa_jpl_id"] == jpl_id)
+    rp = row["resource_profile"]
+
+    assert rp["type_group"] == "C"
+    assert rp["water_mass_kg"] > 0
+    assert rp["metal_mass_kg"] > 0
+    assert rp["pgm_mass_kg"] > 0
+    assert isinstance(rp["why_go_here"], str)
+    assert isinstance(rp["primary_resources"], list)

@@ -5,15 +5,16 @@ import { AsteroidInfoPanel } from './components/AsteroidInfoPanel'
 import { Controls } from './components/Controls'
 import { NavigationSidebar } from './components/NavigationSidebar'
 import { useAsteroids } from './hooks/useAsteroids'
-import type { AsteroidOrbit, FlyTarget, ScoreKey } from './types'
+import type { AsteroidOrbit, FlyTarget, ColorMode } from './types'
 
 export default function App() {
   const viewerRef = useRef<SolarSystemViewerHandle>(null)
 
   const [limit, setLimit] = useState(500)
   const [earthCrossingOnly, setEarthCrossingOnly] = useState(false)
-  const [scoreKey, setScoreKey] = useState<ScoreKey>('prospecting_score')
+  const [colorMode, setColorMode] = useState<ColorMode>('spectral_type')
   const [selected, setSelected] = useState<AsteroidOrbit | null>(null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   const { asteroids, loading, error } = useAsteroids({ limit, earthCrossingOnly })
 
@@ -35,35 +36,43 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <NavigationSidebar asteroids={asteroids} onFlyTo={handleFlyTo} />
+      <NavigationSidebar asteroids={asteroids} onFlyTo={handleFlyTo} onHover={setHoveredId} />
 
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <SolarSystemViewer
           ref={viewerRef}
           asteroids={asteroids}
           selectedId={selected?.nasa_jpl_id ?? null}
-          scoreKey={scoreKey}
+          hoveredId={hoveredId}
+          colorMode={colorMode}
           onSelect={handleSelect}
+          onHover={setHoveredId}
         />
 
         <Controls
           limit={limit}
           earthCrossingOnly={earthCrossingOnly}
-          scoreKey={scoreKey}
+          colorMode={colorMode}
           asteroidCount={asteroids.length}
           loading={loading}
           onLimitChange={setLimit}
           onEarthCrossingChange={setEarthCrossingOnly}
-          onScoreKeyChange={setScoreKey}
+          onColorModeChange={setColorMode}
         />
 
+        {hoveredId && (
+          <span data-testid="hovered-asteroid-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
+        )}
+
         {selected && (
-          <AsteroidInfoPanel
-            asteroid={selected}
-            allAsteroids={asteroids}
-            scoreKey={scoreKey}
-            onClose={() => setSelected(null)}
-          />
+          <>
+            <span data-testid="selected-orbit-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
+            <AsteroidInfoPanel
+              asteroid={selected}
+              allAsteroids={asteroids}
+              onClose={() => setSelected(null)}
+            />
+          </>
         )}
 
         {error && (

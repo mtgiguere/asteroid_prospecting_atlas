@@ -1,26 +1,26 @@
-import type { ScoreKey } from '../types'
+import type { ColorMode } from '../types'
 import styles from './Controls.module.css'
 
 interface Props {
   limit: number
   earthCrossingOnly: boolean
-  scoreKey: ScoreKey
+  colorMode: ColorMode
   asteroidCount: number
   loading: boolean
   onLimitChange: (v: number) => void
   onEarthCrossingChange: (v: boolean) => void
-  onScoreKeyChange: (v: ScoreKey) => void
+  onColorModeChange: (v: ColorMode) => void
 }
 
 export function Controls({
   limit,
   earthCrossingOnly,
-  scoreKey,
+  colorMode,
   asteroidCount,
   loading,
   onLimitChange,
   onEarthCrossingChange,
-  onScoreKeyChange,
+  onColorModeChange,
 }: Props) {
   return (
     <div className={styles.bar}>
@@ -54,10 +54,11 @@ export function Controls({
         <label className={styles.field}>
           <span className={styles.label}>COLOR BY</span>
           <select
-            value={scoreKey}
-            onChange={(e) => onScoreKeyChange(e.target.value as ScoreKey)}
+            value={colorMode}
+            onChange={(e) => onColorModeChange(e.target.value as ColorMode)}
             className={styles.select}
           >
+            <option value="spectral_type">Spectral Type</option>
             <option value="prospecting_score">Prospecting Score</option>
             <option value="accessibility_score">Accessibility Score</option>
           </select>

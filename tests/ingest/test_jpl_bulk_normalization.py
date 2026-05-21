@@ -21,6 +21,7 @@ FIELDS = [
     "ma",
     "per",
     "epoch",
+    "spec_B",
 ]
 
 FULL_ROW = [
@@ -37,6 +38,7 @@ FULL_ROW = [
     "358.1",
     "642.997",
     "60200.5",
+    "S",
 ]
 
 
@@ -72,6 +74,7 @@ def test_normalize_bulk_row_missing_orbit_fields_returns_none_orbit():
         None,
         None,
         None,
+        None,
     ]
     asteroid, orbit = normalize_bulk_row(FIELDS, row)
 
@@ -88,6 +91,7 @@ def test_normalize_bulk_row_partial_orbit_returns_none_orbit():
         "0.25",
         "0.22",
         "1.45",
+        None,
         None,
         None,
         None,
@@ -115,6 +119,7 @@ def test_normalize_bulk_row_missing_physical_props_is_ok():
         "358.1",
         "642.997",
         "60200.5",
+        None,
     ]
     asteroid, orbit = normalize_bulk_row(FIELDS, row)
 
@@ -139,6 +144,7 @@ def test_normalize_bulk_row_missing_spkid_raises():
         "350.0",
         "640.0",
         "60200.5",
+        None,
     ]
     with pytest.raises(ValueError):
         normalize_bulk_row(FIELDS, row)
@@ -159,6 +165,18 @@ def test_normalize_bulk_row_missing_name_raises():
         "350.0",
         "640.0",
         "60200.5",
+        None,
     ]
     with pytest.raises(ValueError):
         normalize_bulk_row(FIELDS, row)
+
+
+def test_normalize_bulk_row_parses_spectral_type():
+    asteroid, _ = normalize_bulk_row(FIELDS, FULL_ROW)
+    assert asteroid.spectral_type == "S"
+
+
+def test_normalize_bulk_row_spectral_type_none_when_missing():
+    row = [*FULL_ROW[:-1], None]
+    asteroid, _ = normalize_bulk_row(FIELDS, row)
+    assert asteroid.spectral_type is None

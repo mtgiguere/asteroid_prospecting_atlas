@@ -18,3 +18,4 @@ class Asteroid(Base):
     absolute_magnitude_h = Column(Float, nullable=True)
     estimated_diameter_km = Column(Float, nullable=True)
     albedo = Column(Float, nullable=True)
+    spectral_type = Column(Text, nullable=True)
