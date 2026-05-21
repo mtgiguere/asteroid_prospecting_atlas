@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import type { AsteroidOrbit } from '../types'
 
-const API_BASE = 'http://localhost:8000'
+export function getApiBase(): string {
+  return import.meta.env.VITE_API_BASE || 'http://localhost:8000'
+}
 
 interface UseAsteroidsOptions {
   limit: number
@@ -28,7 +30,7 @@ export function useAsteroids({ limit, earthCrossingOnly }: UseAsteroidsOptions):
       earth_crossing_only: String(earthCrossingOnly),
     })
 
-    fetch(`${API_BASE}/asteroids/orbits?${params}`)
+    fetch(`${getApiBase()}/asteroids/orbits?${params}`)
       .then((res) => {
         if (!res.ok) throw new Error(`API error ${res.status}`)
         return res.json() as Promise<AsteroidOrbit[]>
