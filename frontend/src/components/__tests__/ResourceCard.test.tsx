@@ -71,7 +71,7 @@ describe('ResourceCard', () => {
 
   it('renders pgm (platinum-group) mass for M-type', () => {
     render(<ResourceCard profile={M_PROFILE} />)
-    expect(screen.getByText(/platinum/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/platinum/i).length).toBeGreaterThan(0)
   })
 
   it('handles null mass fields gracefully', () => {
@@ -82,5 +82,30 @@ describe('ResourceCard', () => {
   it('has a section header indicating resource info', () => {
     render(<ResourceCard profile={C_PROFILE} />)
     expect(screen.getByText(/why go here/i)).toBeInTheDocument()
+  })
+
+  it('shows an "in context" section header when equivalencies are available', () => {
+    render(<ResourceCard profile={C_PROFILE} />)
+    expect(screen.getByText(/in context/i)).toBeInTheDocument()
+  })
+
+  it('shows water equivalency for C-type profile', () => {
+    render(<ResourceCard profile={C_PROFILE} />)
+    expect(screen.getByText(/lunar base/i)).toBeInTheDocument()
+  })
+
+  it('shows pgm equivalency for M-type profile', () => {
+    render(<ResourceCard profile={M_PROFILE} />)
+    expect(screen.getByText(/platinum/i, { selector: '[data-testid="equivalency-pgms"]' })).toBeInTheDocument()
+  })
+
+  it('shows metals equivalency for M-type profile', () => {
+    render(<ResourceCard profile={M_PROFILE} />)
+    expect(screen.getByText(/steel/i)).toBeInTheDocument()
+  })
+
+  it('does not show "in context" section when all masses are null', () => {
+    render(<ResourceCard profile={UNKNOWN_PROFILE} />)
+    expect(screen.queryByText(/in context/i)).not.toBeInTheDocument()
   })
 })
