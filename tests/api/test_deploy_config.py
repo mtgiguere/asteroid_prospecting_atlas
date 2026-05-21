@@ -2,9 +2,6 @@
 test_deploy_config.py — verify Railway-specific config behaves correctly.
 """
 
-import os
-
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -34,6 +31,7 @@ def test_cors_uses_allowed_origins_env_var(monkeypatch):
     import importlib
 
     import asteroid_atlas.api.main as main_module
+
     importlib.reload(main_module)
 
     client = TestClient(main_module.app)
@@ -50,6 +48,7 @@ def test_cors_defaults_to_localhost_when_env_not_set(monkeypatch):
     import importlib
 
     import asteroid_atlas.api.main as main_module
+
     importlib.reload(main_module)
 
     client = TestClient(main_module.app)
