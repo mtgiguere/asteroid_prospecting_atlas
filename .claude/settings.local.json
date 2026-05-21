@@ -46,7 +46,9 @@
       "Bash(python -m pytest tests/ingest/test_jpl_bulk_normalization.py -q --no-cov)",
       "Bash(python *)",
       "Bash(git pull *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(node -e \"const r = require\\('@testing-library/react'\\); console.log\\(typeof r.renderHook, Object.keys\\(r\\).filter\\(k=>k.includes\\('Hook'\\)\\)\\)\")",
+      "Bash(git fetch *)"
     ]
   }
 }
