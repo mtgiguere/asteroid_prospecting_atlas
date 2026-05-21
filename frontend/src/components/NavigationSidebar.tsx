@@ -159,6 +159,7 @@ export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
           key={p.id}
           style={S.row}
           onClick={() => onFlyTo({ kind: 'planet', planetId: p.id })}
+          data-testid="planet-list-item"
         >
           <div style={S.dot(p.color)} />
           <span>{p.name}</span>

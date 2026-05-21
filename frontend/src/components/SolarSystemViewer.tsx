@@ -3,7 +3,10 @@ import { Viewer } from 'resium'
 import type { CesiumComponentRef } from 'resium'
 import {
   Cartesian3,
+  Cartesian2,
   Color,
+  LabelCollection,
+  LabelStyle,
   PolylineCollection,
   PointPrimitiveCollection,
   ScreenSpaceEventHandler,
@@ -102,12 +105,28 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       controller.zoomFactor = 2.0          // default 5.0 — much too fast at AU scale
       controller.minimumZoomDistance = 1e8 // ~0.001 AU — close enough to inspect a rock
 
-      // Sol — 3-layer glow
+      // Sol — 4-layer glow (outer halo + mid corona + bright core + white hot centre)
       const sunPoints = new PointPrimitiveCollection()
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 72, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.5),  pixelSize: 36, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 14, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 160, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 90,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
       scene.primitives.add(sunPoints)
+
+      // Sol label
+      const sunLabel = new LabelCollection()
+      sunLabel.add({
+        position: Cartesian3.ZERO,
+        text: 'Sol',
+        font: 'bold 13px monospace',
+        fillColor: Color.fromCssColorString('#fff5aa'),
+        outlineColor: Color.BLACK,
+        outlineWidth: 3,
+        style: LabelStyle.FILL_AND_OUTLINE,
+        pixelOffset: new Cartesian2(22, 0),
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      })
+      scene.primitives.add(sunLabel)
 
       // Planet orbit rings
       const planetLines = new PolylineCollection()
@@ -122,19 +141,33 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(planetLines)
 
-      // Planet points spread around their orbits
+      // Planet points + name labels
       const planetPoints = new PointPrimitiveCollection()
+      const planetLabels = new LabelCollection()
       PLANETS.forEach((p) => {
         const rad = (p.angleDeg * Math.PI) / 180
+        const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
         planetPoints.add({
-          position: new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0),
+          position: pos,
           color: Color.fromCssColorString(p.color),
           pixelSize: p.pointSize,
           disableDepthTestDistance: Number.POSITIVE_INFINITY,
           id: `planet:${p.id}`,
         })
+        planetLabels.add({
+          position: pos,
+          text: p.name,
+          font: '12px monospace',
+          fillColor: Color.fromCssColorString(p.color),
+          outlineColor: Color.BLACK,
+          outlineWidth: 3,
+          style: LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cartesian2(p.pointSize / 2 + 6, 0),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        })
       })
       scene.primitives.add(planetPoints)
+      scene.primitives.add(planetLabels)
 
       // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
       const beltLines = new PolylineCollection()
@@ -157,8 +190,10 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(sunPoints)
+          scene.primitives.remove(sunLabel)
           scene.primitives.remove(planetLines)
           scene.primitives.remove(planetPoints)
+          scene.primitives.remove(planetLabels)
           scene.primitives.remove(beltLines)
         }
       }
