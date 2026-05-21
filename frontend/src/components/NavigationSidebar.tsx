@@ -2,6 +2,24 @@ import { useState, useMemo } from 'react'
 import { PLANETS } from '../constants/solarSystem'
 import type { AsteroidOrbit, FlyTarget } from '../types'
 
+type ResourceFilter = 'all' | 'water' | 'metals' | 'pgms'
+
+const RESOURCE_FILTERS: { id: ResourceFilter; label: string }[] = [
+  { id: 'all',    label: 'All'    },
+  { id: 'water',  label: 'Water'  },
+  { id: 'metals', label: 'Metals' },
+  { id: 'pgms',   label: 'PGMs'   },
+]
+
+function matchesResourceFilter(asteroid: AsteroidOrbit, filter: ResourceFilter): boolean {
+  if (filter === 'all') return true
+  const g = asteroid.resource_profile?.type_group
+  if (filter === 'water')  return g === 'C'
+  if (filter === 'metals') return g === 'S' || g === 'M'
+  if (filter === 'pgms')   return g === 'M'
+  return true
+}
+
 interface Props {
   asteroids: AsteroidOrbit[]
   onFlyTo: (target: FlyTarget) => void
@@ -134,12 +152,15 @@ function HoverRow({
 
 export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
   const [query, setQuery] = useState('')
+  const [resourceFilter, setResourceFilter] = useState<ResourceFilter>('all')
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return asteroids
-    return asteroids.filter((a) => a.name.toLowerCase().includes(q))
-  }, [asteroids, query])
+    return asteroids.filter((a) =>
+      matchesResourceFilter(a, resourceFilter) &&
+      (q === '' || a.name.toLowerCase().includes(q))
+    )
+  }, [asteroids, query, resourceFilter])
 
   return (
     <div style={S.sidebar}>
@@ -168,7 +189,29 @@ export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
 
       {/* Asteroids */}
       <div style={S.sectionLabel}>Asteroids</div>
-      <div style={S.count}>{asteroids.length} bodies</div>
+      <div style={S.count}>{filtered.length} bodies</div>
+      <div style={{ display: 'flex', gap: 4, padding: '4px 10px 0' }}>
+        {RESOURCE_FILTERS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setResourceFilter(id)}
+            style={{
+              flex: 1,
+              background: resourceFilter === id ? 'rgba(80,140,255,0.2)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${resourceFilter === id ? 'rgba(80,140,255,0.5)' : 'rgba(80,120,200,0.2)'}`,
+              borderRadius: 3,
+              color: resourceFilter === id ? '#a8c0e8' : '#4a6a9f',
+              fontSize: 9,
+              letterSpacing: '0.06em',
+              padding: '3px 0',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono, monospace)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div style={S.searchWrap}>
         <input
           type="search"

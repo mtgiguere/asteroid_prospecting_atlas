@@ -4,6 +4,7 @@ import type { SolarSystemViewerHandle } from './components/SolarSystemViewer'
 import { AsteroidInfoPanel } from './components/AsteroidInfoPanel'
 import { Controls } from './components/Controls'
 import { NavigationSidebar } from './components/NavigationSidebar'
+import { SpectralTypeLegend } from './components/SpectralTypeLegend'
 import { useAsteroids } from './hooks/useAsteroids'
 import type { AsteroidOrbit, FlyTarget, ColorMode } from './types'
 
@@ -48,6 +49,8 @@ export default function App() {
           onSelect={handleSelect}
           onHover={setHoveredId}
         />
+
+        <SpectralTypeLegend colorMode={colorMode} panelOpen={selected !== null} />
 
         <Controls
           limit={limit}
