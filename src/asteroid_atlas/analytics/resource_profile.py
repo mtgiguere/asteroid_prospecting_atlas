@@ -58,7 +58,12 @@ _PARAMS: dict[str, dict] = {
         "metal_fraction": 0.25,
         "pgm_ppm": 10,
         "label": "Silicaceous (S-type)",
-        "primary_resources": ["Iron", "Nickel", "Silicate minerals", "Platinum-group metals (trace)"],
+        "primary_resources": [
+            "Iron",
+            "Nickel",
+            "Silicate minerals",
+            "Platinum-group metals (trace)",
+        ],
         "why_go_here": (
             "Silicaceous asteroids are packed with iron, nickel, and olivine — "
             "the structural metals of civilization. Building orbital infrastructure, "
@@ -87,7 +92,11 @@ _PARAMS: dict[str, dict] = {
         "metal_fraction": 0.30,
         "pgm_ppm": 30,
         "label": "X-type (ambiguous composition)",
-        "primary_resources": ["Iron/nickel (likely)", "Possible platinum-group metals", "Possible volatiles"],
+        "primary_resources": [
+            "Iron/nickel (likely)",
+            "Possible platinum-group metals",
+            "Possible volatiles",
+        ],
         "why_go_here": (
             "X-types are compositionally ambiguous — they could be metallic, enstatite, "
             "or primitive depending on the specific subtype. A follow-up spectroscopic "

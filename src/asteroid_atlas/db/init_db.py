@@ -2,11 +2,12 @@
 init_db.py
 """
 
+from sqlalchemy import text
+
 import asteroid_atlas.models.asteroid  # noqa: F401
 import asteroid_atlas.models.asteroid_orbit  # noqa: F401
 from asteroid_atlas.db.session import engine
 from asteroid_atlas.models.base import Base
-from sqlalchemy import text
 
 
 def main() -> None:
@@ -17,9 +18,7 @@ def main() -> None:
 
 def _apply_migrations() -> None:
     with engine.connect() as conn:
-        conn.execute(
-            text("ALTER TABLE asteroids ADD COLUMN IF NOT EXISTS spectral_type TEXT")
-        )
+        conn.execute(text("ALTER TABLE asteroids ADD COLUMN IF NOT EXISTS spectral_type TEXT"))
         conn.commit()
 
 
