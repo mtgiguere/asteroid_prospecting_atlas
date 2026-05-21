@@ -168,13 +168,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           asteroid.argument_of_periapsis_deg,
         )
 
-        orbitLines.add({
-          positions,
-          width: isSelected ? 3 : 1,
-          material: Material.fromType(Material.ColorType, {
-            color: color.withAlpha(isSelected ? 1.0 : 0.7),
-          }),
-        })
+        if (isSelected) {
+          orbitLines.add({
+            positions,
+            width: 3,
+            material: Material.fromType(Material.ColorType, {
+              color: color.withAlpha(1.0),
+            }),
+          })
+        }
 
         if (positions.length > 0) {
           asteroidPoints.add({

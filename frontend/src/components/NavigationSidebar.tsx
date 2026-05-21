@@ -106,10 +106,12 @@ function HoverRow({
   style,
   onClick,
   children,
+  'data-testid': testId,
 }: {
   style: React.CSSProperties
   onClick: () => void
   children: React.ReactNode
+  'data-testid'?: string
 }) {
   const [hovered, setHovered] = useState(false)
   return (
@@ -118,6 +120,7 @@ function HoverRow({
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      data-testid={testId}
     >
       {children}
     </div>
@@ -176,6 +179,7 @@ export function NavigationSidebar({ asteroids, onFlyTo }: Props) {
             key={a.nasa_jpl_id}
             style={S.asteroidRow}
             onClick={() => onFlyTo({ kind: 'asteroid', asteroid: a })}
+            data-testid="asteroid-list-item"
           >
             <div style={S.asteroidName}>{a.name}</div>
             <div style={S.asteroidScore}>score {a.prospecting_score.toFixed(3)}</div>

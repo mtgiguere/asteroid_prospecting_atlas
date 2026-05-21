@@ -58,12 +58,15 @@ export default function App() {
         />
 
         {selected && (
-          <AsteroidInfoPanel
-            asteroid={selected}
-            allAsteroids={asteroids}
-            scoreKey={scoreKey}
-            onClose={() => setSelected(null)}
-          />
+          <>
+            <span data-testid="selected-orbit-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
+            <AsteroidInfoPanel
+              asteroid={selected}
+              allAsteroids={asteroids}
+              scoreKey={scoreKey}
+              onClose={() => setSelected(null)}
+            />
+          </>
         )}
 
         {error && (
