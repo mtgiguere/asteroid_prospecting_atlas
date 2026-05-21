@@ -39,3 +39,5 @@ export type FlyTarget =
   | { kind: 'sol' }
   | { kind: 'planet'; planetId: string }
   | { kind: 'asteroid'; asteroid: AsteroidOrbit }
+
+export type RendererMode = 'cesium' | 'spacekit'

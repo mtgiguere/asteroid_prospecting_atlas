@@ -73,3 +73,7 @@ export function mjdToDateString(mjd: number): string {
 export function todayMjd(): number {
   return dateToMjd(new Date())
 }
+
+export function earthRotationRad(mjd: number): number {
+  return (mjd * 2 * Math.PI) % (2 * Math.PI)
+}
