@@ -4,8 +4,8 @@
 
 ## Priority 0 — Do First
 
-- [ ] **Ingest more real JPL asteroid data** `data`  
-  Only 12 bodies locally — need hundreds for the visualization to be meaningful. Expand the ingest pipeline to pull a larger real dataset from NASA JPL.
+- [x] **Ingest more real JPL asteroid data** `data`  
+  `jpl_bulk.py` uses the JPL SBDB Query API to fetch up to 500 NEAs in one HTTP call. Run `python scripts/seed_db.py [--limit N]` to populate.
 
 ---
 
@@ -23,11 +23,11 @@
 - [ ] **Floating name labels (Orbitron font)** `ux`  
   Toggle on/off — gets cluttered with 500+ objects.
 
-- [ ] **Home / "find asteroids" button** `ux`  
-  Auto-zoom to where the data actually is on load. Smooth `flyTo()` on button press.
+- [x] **Home / "find asteroids" button** `ux`  
+  Covered by NavigationSidebar — Sol / planet / asteroid flyTo via `camera.flyToBoundingSphere`.
 
-- [ ] **Search bar → flyTo() selected asteroid** `ux`  
-  Smooth cinematic camera fly across the solar system to the matched asteroid.
+- [x] **Search bar → flyTo() selected asteroid** `ux`  
+  NavigationSidebar search filters 500 asteroids; click any → smooth camera fly.
 
 - [ ] **Highlight Earth-orbit crossing point on selected orbit** `ux` `stretch`  
   Mark the exact ecliptic intersection visually. Note: computing the crossing point from Keplerian elements is non-trivial — treat as a stretch goal.
@@ -57,6 +57,13 @@
 
 - [ ] **Spectral type coloring** `science`  
   C-type (water/organics), S-type (silicates), M-type (metals) have completely different resource profiles. Fetch spectral type from JPL and add as a color-by option in the frontend.
+
+---
+
+## UX — Navigation Feel
+
+- [ ] **Make 3D navigation more user-friendly** `ux` `investigation`  
+  Cesium's default mouse controls (drag-to-rotate, right-click-to-zoom, middle-to-pan) are unfamiliar to most users. Investigate: camera inertia tuning, scroll-to-zoom sensitivity, a visible scale indicator, a "reset view" button, and possibly swapping to a more intuitive control scheme. Goal: a first-time user should feel oriented within 10 seconds without reading docs.
 
 ---
 
