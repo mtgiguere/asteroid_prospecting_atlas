@@ -64,7 +64,7 @@ def fetch_jpl_neo_bulk(limit: int = 500) -> dict:
 def normalize_bulk_row(
     fields: list[str], row: list
 ) -> tuple[NormalizedAsteroid, NormalizedAsteroidOrbit | None]:
-    lookup = dict(zip(fields, row))
+    lookup = dict(zip(fields, row, strict=True))
 
     spkid = lookup.get("spkid")
     full_name = lookup.get("full_name")

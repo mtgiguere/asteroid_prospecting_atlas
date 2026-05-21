@@ -107,7 +107,6 @@ def test_ingest_bulk_asteroids_inserts_all_rows():
     assert "Bulk Pipeline 2" in names
     assert "Bulk Pipeline 3 (no orbit)" in names
 
-    ids = [r.id for r in results]
     _cleanup(session, TEST_SPKIDS)
     session.close()
 
@@ -117,7 +116,7 @@ def test_ingest_bulk_asteroids_only_inserts_orbit_when_complete():
     _cleanup(session, TEST_SPKIDS)
 
     with patch("asteroid_atlas.ingest.jpl_bulk.fetch_jpl_neo_bulk", return_value=MOCK_PAYLOAD):
-        results = ingest_bulk_asteroids(session, limit=3)
+        ingest_bulk_asteroids(session, limit=3)
 
     with_orbit = session.query(Asteroid).filter_by(nasa_jpl_id="BLKP-1").first()
     no_orbit = session.query(Asteroid).filter_by(nasa_jpl_id="BLKP-3").first()
