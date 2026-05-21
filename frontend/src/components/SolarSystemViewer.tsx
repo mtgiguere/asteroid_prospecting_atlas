@@ -25,12 +25,14 @@ export interface SolarSystemViewerHandle {
 interface Props {
   asteroids: AsteroidOrbit[]
   selectedId: string | null
+  hoveredId: string | null
   scoreKey: ScoreKey
   onSelect: (asteroid: AsteroidOrbit | null) => void
+  onHover: (id: string | null) => void
 }
 
 export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
-  function SolarSystemViewer({ asteroids, selectedId, scoreKey, onSelect }, ref) {
+  function SolarSystemViewer({ asteroids, selectedId, hoveredId, scoreKey, onSelect, onHover }, ref) {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
 
     const handleRef = useCallback((r: CesiumComponentRef<CesiumViewer> | null) => {
@@ -134,11 +136,30 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(planetPoints)
 
+      // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
+      const beltLines = new PolylineCollection()
+      beltLines.add({
+        positions: eclipticCircle(2.2),
+        width: 1,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#555566').withAlpha(0.25),
+        }),
+      })
+      beltLines.add({
+        positions: eclipticCircle(3.2),
+        width: 1,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#555566').withAlpha(0.25),
+        }),
+      })
+      scene.primitives.add(beltLines)
+
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(sunPoints)
           scene.primitives.remove(planetLines)
           scene.primitives.remove(planetPoints)
+          scene.primitives.remove(beltLines)
         }
       }
     }, [viewer])
@@ -157,6 +178,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       asteroids.forEach((asteroid) => {
         const isSelected = asteroid.nasa_jpl_id === selectedId
+        const isHovered = asteroid.nasa_jpl_id === hoveredId
         const hex = scoreToHex(asteroid[scoreKey], minScore, maxScore)
         const color = Color.fromCssColorString(hex)
 
@@ -181,8 +203,8 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         if (positions.length > 0) {
           asteroidPoints.add({
             position: positions[0],
-            color,
-            pixelSize: isSelected ? 10 : 5,
+            color: isHovered ? Color.WHITE : color,
+            pixelSize: isSelected ? 10 : isHovered ? 9 : 5,
             disableDepthTestDistance: Number.POSITIVE_INFINITY,
             id: asteroid.nasa_jpl_id,
           })
@@ -198,7 +220,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           scene.primitives.remove(asteroidPoints)
         }
       }
-    }, [viewer, asteroids, selectedId, scoreKey])
+    }, [viewer, asteroids, selectedId, hoveredId, scoreKey])
 
     // Click picking — select asteroid or planet, then flyTo
     useEffect(() => {
@@ -235,8 +257,20 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         ScreenSpaceEventType.LEFT_CLICK,
       )
 
+      handler.setInputAction(
+        (event: { endPosition: { x: number; y: number } }) => {
+          const picked = viewer.scene.pick(event.endPosition)
+          if (defined(picked) && typeof picked.id === 'string' && !picked.id.startsWith('planet:')) {
+            onHover(picked.id)
+          } else {
+            onHover(null)
+          }
+        },
+        ScreenSpaceEventType.MOUSE_MOVE,
+      )
+
       return () => handler.destroy()
-    }, [viewer, asteroids, onSelect, ref])
+    }, [viewer, asteroids, onSelect, onHover, ref])
 
     return (
       <Viewer

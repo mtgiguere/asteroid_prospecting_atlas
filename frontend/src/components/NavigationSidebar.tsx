@@ -5,6 +5,7 @@ import type { AsteroidOrbit, FlyTarget } from '../types'
 interface Props {
   asteroids: AsteroidOrbit[]
   onFlyTo: (target: FlyTarget) => void
+  onHover?: (id: string | null) => void
 }
 
 const S = {
@@ -105,11 +106,15 @@ const HOVER_BG = 'rgba(80,140,255,0.1)'
 function HoverRow({
   style,
   onClick,
+  onMouseEnter,
+  onMouseLeave,
   children,
   'data-testid': testId,
 }: {
   style: React.CSSProperties
   onClick: () => void
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
   children: React.ReactNode
   'data-testid'?: string
 }) {
@@ -118,8 +123,8 @@ function HoverRow({
     <div
       style={{ ...style, background: hovered ? HOVER_BG : 'transparent' }}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => { setHovered(true); onMouseEnter?.() }}
+      onMouseLeave={() => { setHovered(false); onMouseLeave?.() }}
       data-testid={testId}
     >
       {children}
@@ -127,7 +132,7 @@ function HoverRow({
   )
 }
 
-export function NavigationSidebar({ asteroids, onFlyTo }: Props) {
+export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -179,6 +184,8 @@ export function NavigationSidebar({ asteroids, onFlyTo }: Props) {
             key={a.nasa_jpl_id}
             style={S.asteroidRow}
             onClick={() => onFlyTo({ kind: 'asteroid', asteroid: a })}
+            onMouseEnter={() => onHover?.(a.nasa_jpl_id)}
+            onMouseLeave={() => onHover?.(null)}
             data-testid="asteroid-list-item"
           >
             <div style={S.asteroidName}>{a.name}</div>

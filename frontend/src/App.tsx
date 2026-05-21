@@ -14,6 +14,7 @@ export default function App() {
   const [earthCrossingOnly, setEarthCrossingOnly] = useState(false)
   const [scoreKey, setScoreKey] = useState<ScoreKey>('prospecting_score')
   const [selected, setSelected] = useState<AsteroidOrbit | null>(null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   const { asteroids, loading, error } = useAsteroids({ limit, earthCrossingOnly })
 
@@ -35,15 +36,17 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <NavigationSidebar asteroids={asteroids} onFlyTo={handleFlyTo} />
+      <NavigationSidebar asteroids={asteroids} onFlyTo={handleFlyTo} onHover={setHoveredId} />
 
       <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
         <SolarSystemViewer
           ref={viewerRef}
           asteroids={asteroids}
           selectedId={selected?.nasa_jpl_id ?? null}
+          hoveredId={hoveredId}
           scoreKey={scoreKey}
           onSelect={handleSelect}
+          onHover={setHoveredId}
         />
 
         <Controls
@@ -56,6 +59,10 @@ export default function App() {
           onEarthCrossingChange={setEarthCrossingOnly}
           onScoreKeyChange={setScoreKey}
         />
+
+        {hoveredId && (
+          <span data-testid="hovered-asteroid-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
+        )}
 
         {selected && (
           <>

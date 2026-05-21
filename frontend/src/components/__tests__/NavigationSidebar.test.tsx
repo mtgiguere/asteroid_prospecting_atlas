@@ -98,4 +98,21 @@ describe('NavigationSidebar', () => {
     render(<NavigationSidebar asteroids={[makeAsteroid(), YORP]} onFlyTo={vi.fn()} />)
     expect(screen.getByText(/2 bodies/i)).toBeInTheDocument()
   })
+
+  it('calls onHover with asteroid id on mouseenter', async () => {
+    const onHover = vi.fn()
+    const eros = makeAsteroid()
+    render(<NavigationSidebar asteroids={[eros]} onFlyTo={vi.fn()} onHover={onHover} />)
+    await userEvent.hover(screen.getByText(/433 Eros/i))
+    expect(onHover).toHaveBeenCalledWith('2000433')
+  })
+
+  it('calls onHover with null on mouseleave', async () => {
+    const onHover = vi.fn()
+    const eros = makeAsteroid()
+    render(<NavigationSidebar asteroids={[eros]} onFlyTo={vi.fn()} onHover={onHover} />)
+    await userEvent.hover(screen.getByText(/433 Eros/i))
+    await userEvent.unhover(screen.getByText(/433 Eros/i))
+    expect(onHover).toHaveBeenLastCalledWith(null)
+  })
 })
