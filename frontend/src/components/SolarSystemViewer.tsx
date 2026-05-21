@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
+import { useEffect, useCallback, useState, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Viewer } from 'resium'
 import type { CesiumComponentRef } from 'resium'
 import {
@@ -20,6 +20,7 @@ import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
 import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
 import { positionAtMjd } from '../utils/orbitMechanics'
+import { useOrbitAnimation } from '../hooks/useOrbitAnimation'
 import { scoreToHex } from '../utils/colorScale'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
 
@@ -40,6 +41,9 @@ interface Props {
 export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
   function SolarSystemViewer({ asteroids, selectedId, hoveredId, colorMode, currentMjd, onSelect, onHover }, ref) {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
+    const { displayId, revealProgress, fadeAlpha } = useOrbitAnimation(selectedId)
+    const currentMjdRef = useRef(currentMjd)
+    useEffect(() => { currentMjdRef.current = currentMjd }, [currentMjd])
 
     const handleRef = useCallback((r: CesiumComponentRef<CesiumViewer> | null) => {
       setViewer(r?.cesiumElement ?? null)
@@ -69,14 +73,17 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
             )
             radius = planet.sma * AU_M * 0.15
           } else {
-            const positions = orbitToCartesian3(
-              target.asteroid.semi_major_axis_au,
-              target.asteroid.eccentricity,
-              target.asteroid.inclination_deg,
-              target.asteroid.longitude_of_ascending_node_deg,
-              target.asteroid.argument_of_periapsis_deg,
-            )
-            position = positions[0]
+            const raw = positionAtMjd({
+              semiMajorAxisAu: target.asteroid.semi_major_axis_au,
+              eccentricity: target.asteroid.eccentricity,
+              inclinationDeg: target.asteroid.inclination_deg,
+              lonAscNodeDeg: target.asteroid.longitude_of_ascending_node_deg,
+              argPeriapsisDeg: target.asteroid.argument_of_periapsis_deg,
+              epochMjd: target.asteroid.epoch_mjd,
+              meanAnomalyDeg: target.asteroid.mean_anomaly_deg,
+              periodDays: target.asteroid.orbital_period_days,
+            }, currentMjdRef.current)
+            position = new Cartesian3(raw.x, raw.y, raw.z)
             radius = target.asteroid.semi_major_axis_au * AU_M * 0.08
           }
 
@@ -202,7 +209,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       }
     }, [viewer])
 
-    // Asteroid orbit paths + points
+    // Asteroid points — re-runs when data, date, or colors change
     useEffect(() => {
       if (!viewer || asteroids.length === 0) return
 
@@ -216,35 +223,16 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         maxScore = Math.max(...scores)
       }
 
-      const orbitLines = new PolylineCollection()
       const asteroidPoints = new PointPrimitiveCollection()
 
       asteroids.forEach((asteroid) => {
-        const isSelected = asteroid.nasa_jpl_id === selectedId
+        const isSelected = asteroid.nasa_jpl_id === displayId
         const isHovered = asteroid.nasa_jpl_id === hoveredId
         const hex =
           colorMode === 'spectral_type'
             ? spectralTypeGroupToHex(asteroid.resource_profile?.type_group ?? null)
             : scoreToHex(asteroid[colorMode], minScore, maxScore)
         const color = Color.fromCssColorString(hex)
-
-        const positions = orbitToCartesian3(
-          asteroid.semi_major_axis_au,
-          asteroid.eccentricity,
-          asteroid.inclination_deg,
-          asteroid.longitude_of_ascending_node_deg,
-          asteroid.argument_of_periapsis_deg,
-        )
-
-        if (isSelected) {
-          orbitLines.add({
-            positions,
-            width: 3,
-            material: Material.fromType(Material.ColorType, {
-              color: color.withAlpha(1.0),
-            }),
-          })
-        }
 
         const rawPos = positionAtMjd({
           semiMajorAxisAu: asteroid.semi_major_axis_au,
@@ -256,6 +244,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           meanAnomalyDeg: asteroid.mean_anomaly_deg,
           periodDays: asteroid.orbital_period_days,
         }, currentMjd)
+
         asteroidPoints.add({
           position: new Cartesian3(rawPos.x, rawPos.y, rawPos.z),
           color: isHovered ? Color.WHITE : color,
@@ -265,16 +254,53 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         })
       })
 
-      scene.primitives.add(orbitLines)
       scene.primitives.add(asteroidPoints)
 
       return () => {
-        if (!viewer.isDestroyed()) {
-          scene.primitives.remove(orbitLines)
-          scene.primitives.remove(asteroidPoints)
-        }
+        if (!viewer.isDestroyed()) scene.primitives.remove(asteroidPoints)
       }
-    }, [viewer, asteroids, selectedId, hoveredId, colorMode, currentMjd])
+    }, [viewer, asteroids, displayId, hoveredId, colorMode, currentMjd])
+
+    // Selected orbit arc — animated sweep in, fade out; cheap enough to re-run each RAF tick
+    useEffect(() => {
+      if (!viewer || !displayId) return
+
+      const asteroid = asteroids.find((a) => a.nasa_jpl_id === displayId)
+      if (!asteroid) return
+
+      const scene = viewer.scene
+      const hex =
+        colorMode === 'spectral_type'
+          ? spectralTypeGroupToHex(asteroid.resource_profile?.type_group ?? null)
+          : scoreToHex(asteroid[colorMode], 0, 1)
+      const color = Color.fromCssColorString(hex)
+
+      const allPositions = orbitToCartesian3(
+        asteroid.semi_major_axis_au,
+        asteroid.eccentricity,
+        asteroid.inclination_deg,
+        asteroid.longitude_of_ascending_node_deg,
+        asteroid.argument_of_periapsis_deg,
+      )
+
+      const visibleCount = Math.max(2, Math.ceil(revealProgress * allPositions.length))
+      const positions = allPositions.slice(0, visibleCount)
+
+      const orbitLines = new PolylineCollection()
+      orbitLines.add({
+        positions,
+        width: 3,
+        material: Material.fromType(Material.ColorType, {
+          color: color.withAlpha(fadeAlpha),
+        }),
+      })
+
+      scene.primitives.add(orbitLines)
+
+      return () => {
+        if (!viewer.isDestroyed()) scene.primitives.remove(orbitLines)
+      }
+    }, [viewer, asteroids, displayId, revealProgress, fadeAlpha, colorMode])
 
     // Click picking — select asteroid or planet, then flyTo
     useEffect(() => {
