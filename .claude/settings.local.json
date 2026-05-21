@@ -18,7 +18,28 @@
       "Bash(git push *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(xargs grep -l \"12\\\\|seed\")",
+      "Bash(.venv\\\\Scripts\\\\python -m pytest tests/ingest/test_jpl_bulk_fetch.py tests/ingest/test_jpl_bulk_normalization.py tests/ingest/test_jpl_bulk_pipeline.py tests/ingest/test_load_seed_asteroids.py --no-header -q)",
+      "Read(//mnt/c/Users/mtgig/working/**)",
+      "Bash(.venv/Scripts/python -m pytest tests/ingest/test_jpl_bulk_fetch.py tests/ingest/test_jpl_bulk_normalization.py tests/ingest/test_jpl_bulk_pipeline.py tests/ingest/test_load_seed_asteroids.py --no-header -q)",
+      "PowerShell(.venv\\\\Scripts\\\\python -m pytest tests/ingest/test_jpl_bulk_fetch.py tests/ingest/test_jpl_bulk_normalization.py tests/ingest/test_jpl_bulk_pipeline.py tests/ingest/test_load_seed_asteroids.py --no-header -q 2>&1 | Select-Object -First 30)",
+      "PowerShell(.venv\\\\Scripts\\\\python -m pytest tests/ingest/test_jpl_bulk_fetch.py tests/ingest/test_jpl_bulk_normalization.py tests/ingest/test_jpl_bulk_pipeline.py tests/ingest/test_load_seed_asteroids.py -v --no-header 2>&1)",
+      "PowerShell(tail *)",
+      "PowerShell(.venv\\\\Scripts\\\\python -m pytest --no-header -q 2>&1 | Select-Object -Last 20)",
+      "PowerShell(New-Item *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\mtgig\\\\working\\\\asteroid_prospecting_atlas\\\\frontend\\\\src\" -Recurse -File -Filter \"*.ts\" -o)",
+      "Bash(Select-Object -First 30)",
+      "PowerShell(Invoke-RestMethod \"http://localhost:8000/asteroids/orbits?limit=5\" | ConvertTo-Json -Depth 2 | Select-Object -First 60)",
+      "PowerShell(.venv\\\\Scripts\\\\python -m pytest --no-header -q 2>&1 | Select-Object -Last 5)",
+      "PowerShell(& \".\\\\.venv\\\\Scripts\\\\python.exe\" -m pytest --no-header -q 2>&1 | Select-Object -Last 5)",
+      "PowerShell(python -m pytest --no-header -q 2>&1 | Select-Object -Last 5)",
+      "Bash(python -m pytest --no-header -q)",
+      "Bash(curl *)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} rows'\\); print\\(d[0]['name'], d[0]['semi_major_axis_au']\\)\")",
+      "Bash(npx playwright *)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

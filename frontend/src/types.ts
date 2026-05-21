@@ -21,3 +21,8 @@ export interface AsteroidOrbit {
 }
 
 export type ScoreKey = 'prospecting_score' | 'accessibility_score'
+
+export type FlyTarget =
+  | { kind: 'sol' }
+  | { kind: 'planet'; planetId: string }
+  | { kind: 'asteroid'; asteroid: AsteroidOrbit }
