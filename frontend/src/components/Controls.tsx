@@ -1,25 +1,29 @@
-import type { ScoreKey } from '../types'
+import type { ScoreKey, ColorMode } from '../types'
 import styles from './Controls.module.css'
 
 interface Props {
   limit: number
   earthCrossingOnly: boolean
+  colorMode: ColorMode
   scoreKey: ScoreKey
   asteroidCount: number
   loading: boolean
   onLimitChange: (v: number) => void
   onEarthCrossingChange: (v: boolean) => void
+  onColorModeChange: (v: ColorMode) => void
   onScoreKeyChange: (v: ScoreKey) => void
 }
 
 export function Controls({
   limit,
   earthCrossingOnly,
+  colorMode,
   scoreKey,
   asteroidCount,
   loading,
   onLimitChange,
   onEarthCrossingChange,
+  onColorModeChange,
   onScoreKeyChange,
 }: Props) {
   return (
@@ -54,12 +58,25 @@ export function Controls({
         <label className={styles.field}>
           <span className={styles.label}>COLOR BY</span>
           <select
+            value={colorMode}
+            onChange={(e) => onColorModeChange(e.target.value as ColorMode)}
+            className={styles.select}
+          >
+            <option value="spectral_type">Spectral Type</option>
+            <option value="prospecting_score">Prospecting Score</option>
+            <option value="accessibility_score">Accessibility Score</option>
+          </select>
+        </label>
+
+        <label className={styles.field}>
+          <span className={styles.label}>SCORE</span>
+          <select
             value={scoreKey}
             onChange={(e) => onScoreKeyChange(e.target.value as ScoreKey)}
             className={styles.select}
           >
-            <option value="prospecting_score">Prospecting Score</option>
-            <option value="accessibility_score">Accessibility Score</option>
+            <option value="prospecting_score">Prospecting</option>
+            <option value="accessibility_score">Accessibility</option>
           </select>
         </label>
       </div>

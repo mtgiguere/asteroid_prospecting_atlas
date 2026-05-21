@@ -11,6 +11,7 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
   absolute_magnitude_h: 10.31,
   estimated_diameter_km: 16.84,
   albedo: 0.25,
+  spectral_type: 'S',
   epoch_mjd: 60200.5,
   semi_major_axis_au: 1.458,
   eccentricity: 0.223,
@@ -24,6 +25,16 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
   earth_orbit_crossing: false,
   accessibility_score: 1.2,
   prospecting_score: 0.8,
+  resource_profile: {
+    type_group: 'S',
+    type_label: 'Silicaceous (S-type)',
+    primary_resources: ['Iron', 'Nickel'],
+    estimated_mass_kg: 1e15,
+    water_mass_kg: 0,
+    metal_mass_kg: 2.5e14,
+    pgm_mass_kg: 1e10,
+    why_go_here: 'Iron and nickel for orbital construction.',
+  },
   ...overrides,
 })
 

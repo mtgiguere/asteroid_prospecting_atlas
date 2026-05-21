@@ -8,6 +8,7 @@ from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
 from asteroid_atlas.analytics.orbital_classification import is_earth_orbit_crossing
 from asteroid_atlas.analytics.orbital_metrics import calculate_perihelion_aphelion
 from asteroid_atlas.analytics.prospecting import calculate_prospecting_score
+from asteroid_atlas.analytics.resource_profile import compute_resource_profile
 from asteroid_atlas.models.asteroid import Asteroid
 from asteroid_atlas.models.asteroid_orbit import AsteroidOrbit
 
@@ -34,6 +35,7 @@ def list_asteroids_with_orbits(session) -> list[dict]:
                 "absolute_magnitude_h": asteroid.absolute_magnitude_h,
                 "estimated_diameter_km": asteroid.estimated_diameter_km,
                 "albedo": asteroid.albedo,
+                "spectral_type": asteroid.spectral_type,
                 "orbit_id": orbit.id,
                 "epoch_mjd": orbit.epoch_mjd,
                 "semi_major_axis_au": orbit.semi_major_axis_au,
@@ -78,6 +80,7 @@ def list_asteroids_with_orbital_metrics(session) -> list[dict]:
                 "absolute_magnitude_h": asteroid.absolute_magnitude_h,
                 "estimated_diameter_km": asteroid.estimated_diameter_km,
                 "albedo": asteroid.albedo,
+                "spectral_type": asteroid.spectral_type,
                 "semi_major_axis_au": orbit.semi_major_axis_au,
                 "eccentricity": orbit.eccentricity,
                 "inclination_deg": orbit.inclination_deg,
@@ -130,6 +133,11 @@ def list_asteroids_for_visualization(
             estimated_diameter_km=row.get("estimated_diameter_km"),
         )
 
+        rp = compute_resource_profile(
+            spectral_type=row.get("spectral_type"),
+            diameter_km=row.get("estimated_diameter_km"),
+        )
+
         result.append(
             {
                 **row,
@@ -138,6 +146,16 @@ def list_asteroids_for_visualization(
                 "earth_orbit_crossing": earth_crossing,
                 "accessibility_score": round(accessibility_score, 4),
                 "prospecting_score": round(prospecting_score, 4),
+                "resource_profile": {
+                    "type_group": rp.type_group,
+                    "type_label": rp.type_label,
+                    "primary_resources": rp.primary_resources,
+                    "estimated_mass_kg": rp.estimated_mass_kg,
+                    "water_mass_kg": rp.water_mass_kg,
+                    "metal_mass_kg": rp.metal_mass_kg,
+                    "pgm_mass_kg": rp.pgm_mass_kg,
+                    "why_go_here": rp.why_go_here,
+                },
             }
         )
 

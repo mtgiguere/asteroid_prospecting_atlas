@@ -16,10 +16,11 @@ import {
   defined,
   type Viewer as CesiumViewer,
 } from 'cesium'
-import type { AsteroidOrbit, FlyTarget, ScoreKey } from '../types'
+import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
 import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
 import { scoreToHex } from '../utils/colorScale'
+import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
 
 export interface SolarSystemViewerHandle {
   flyTo: (target: FlyTarget) => void
@@ -29,13 +30,13 @@ interface Props {
   asteroids: AsteroidOrbit[]
   selectedId: string | null
   hoveredId: string | null
-  scoreKey: ScoreKey
+  colorMode: ColorMode
   onSelect: (asteroid: AsteroidOrbit | null) => void
   onHover: (id: string | null) => void
 }
 
 export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
-  function SolarSystemViewer({ asteroids, selectedId, hoveredId, scoreKey, onSelect, onHover }, ref) {
+  function SolarSystemViewer({ asteroids, selectedId, hoveredId, colorMode, onSelect, onHover }, ref) {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
 
     const handleRef = useCallback((r: CesiumComponentRef<CesiumViewer> | null) => {
@@ -204,9 +205,14 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       if (!viewer || asteroids.length === 0) return
 
       const scene = viewer.scene
-      const scores = asteroids.map((a) => a[scoreKey])
-      const minScore = Math.min(...scores)
-      const maxScore = Math.max(...scores)
+
+      let minScore = 0
+      let maxScore = 1
+      if (colorMode !== 'spectral_type') {
+        const scores = asteroids.map((a) => a[colorMode])
+        minScore = Math.min(...scores)
+        maxScore = Math.max(...scores)
+      }
 
       const orbitLines = new PolylineCollection()
       const asteroidPoints = new PointPrimitiveCollection()
@@ -214,7 +220,10 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       asteroids.forEach((asteroid) => {
         const isSelected = asteroid.nasa_jpl_id === selectedId
         const isHovered = asteroid.nasa_jpl_id === hoveredId
-        const hex = scoreToHex(asteroid[scoreKey], minScore, maxScore)
+        const hex =
+          colorMode === 'spectral_type'
+            ? spectralTypeGroupToHex(asteroid.resource_profile?.type_group ?? null)
+            : scoreToHex(asteroid[colorMode], minScore, maxScore)
         const color = Color.fromCssColorString(hex)
 
         const positions = orbitToCartesian3(
@@ -255,7 +264,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           scene.primitives.remove(asteroidPoints)
         }
       }
-    }, [viewer, asteroids, selectedId, hoveredId, scoreKey])
+    }, [viewer, asteroids, selectedId, hoveredId, colorMode])
 
     // Click picking — select asteroid or planet, then flyTo
     useEffect(() => {

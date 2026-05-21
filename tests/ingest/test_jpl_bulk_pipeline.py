@@ -23,6 +23,7 @@ FIELDS = [
     "ma",
     "per",
     "epoch",
+    "spec_B",
 ]
 
 MOCK_PAYLOAD = {
@@ -42,6 +43,7 @@ MOCK_PAYLOAD = {
             "45.0",
             "550.0",
             "60200.5",
+            "S",
         ],
         [
             "BLKP-2",
@@ -57,6 +59,7 @@ MOCK_PAYLOAD = {
             "90.0",
             "1100.0",
             "60201.0",
+            None,
         ],
         [
             "BLKP-3",
@@ -72,6 +75,7 @@ MOCK_PAYLOAD = {
             None,
             None,
             None,
+            "C",
         ],
     ],
     "count": 3,
@@ -148,6 +152,33 @@ def test_ingest_bulk_asteroids_is_idempotent():
     session.close()
 
 
+def test_ingest_bulk_asteroids_stores_spectral_type():
+    session = SessionLocal()
+    spkids = ["BLKP-ST-1", "BLKP-ST-2"]
+    _cleanup(session, spkids)
+
+    payload = {
+        "fields": FIELDS,
+        "data": [
+            ["BLKP-ST-1", "Spectral S", "10.0", "5.0", "0.2", "0.15", "1.3", "8.0", "200.0", "90.0", "45.0", "550.0", "60200.5", "S"],
+            ["BLKP-ST-2", "Spectral None", "12.0", None, None, "0.08", "2.1", "3.5", "110.0", "60.0", "90.0", "1100.0", "60201.0", None],
+        ],
+        "count": 2,
+    }
+
+    with patch("asteroid_atlas.ingest.jpl_bulk.fetch_jpl_neo_bulk", return_value=payload):
+        ingest_bulk_asteroids(session, limit=2)
+
+    s_type = session.query(Asteroid).filter_by(nasa_jpl_id="BLKP-ST-1").first()
+    no_type = session.query(Asteroid).filter_by(nasa_jpl_id="BLKP-ST-2").first()
+
+    assert s_type.spectral_type == "S"
+    assert no_type.spectral_type is None
+
+    _cleanup(session, spkids)
+    session.close()
+
+
 def test_ingest_bulk_asteroids_skips_malformed_rows():
     session = SessionLocal()
     bad_spkids = ["BLKP-GOOD", "BLKP-BAD"]
@@ -170,8 +201,9 @@ def test_ingest_bulk_asteroids_skips_malformed_rows():
                 "180.0",
                 "600.0",
                 "60200.5",
+                "C",
             ],
-            [None, None, None, None, None, None, None, None, None, None, None, None, None],
+            [None, None, None, None, None, None, None, None, None, None, None, None, None, None],
         ],
         "count": 2,
     }

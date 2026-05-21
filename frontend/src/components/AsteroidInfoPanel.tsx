@@ -1,5 +1,6 @@
 import type { AsteroidOrbit, ScoreKey } from '../types'
 import { scoreToHex } from '../utils/colorScale'
+import { ResourceCard } from './ResourceCard'
 import styles from './AsteroidInfoPanel.module.css'
 
 interface Props {
@@ -107,6 +108,8 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, scoreKey, onClose }:
           <span style={{ color: '#ff321e' }}>WORST</span>
         </div>
       </div>
+
+      <ResourceCard profile={asteroid.resource_profile} />
     </div>
   )
 }

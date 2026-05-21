@@ -28,6 +28,7 @@ _BULK_FIELDS = [
     "ma",
     "per",
     "epoch",
+    "spec_B",
 ]
 
 _ORBITAL_KEYS = {"e", "a", "i", "om", "w", "ma", "per", "epoch"}
@@ -76,12 +77,14 @@ def normalize_bulk_row(
         v = lookup.get(key)
         return float(v) if v is not None else None
 
+    spec_b = lookup.get("spec_B")
     asteroid = NormalizedAsteroid(
         name=full_name,
         nasa_jpl_id=str(spkid),
         absolute_magnitude_h=safe_float("H"),
         estimated_diameter_km=safe_float("diameter"),
         albedo=safe_float("albedo"),
+        spectral_type=str(spec_b) if spec_b is not None else None,
     )
 
     orbit = None

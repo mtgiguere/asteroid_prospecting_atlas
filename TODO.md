@@ -11,13 +11,13 @@
 
 ## Visualization — UX
 
-- [ ] **Hide orbit lines by default** `ux`  
+- [x] **Hide orbit lines by default** `ux`  
   Show only asteroid points on load. Orbits revealed on click. Cleaner starfield view.
 
 - [ ] **Animate orbit arc on click** `ux`  
   Sweep animation via Cesium `MaterialProperty`; fade out on deselect.
 
-- [ ] **Hover highlight + glow on asteroid points** `ux`  
+- [x] **Hover highlight + glow on asteroid points** `ux`  
   Size increase or pulse on mouseover via `ScreenSpaceEventHandler` MOUSE_MOVE.
 
 - [ ] **Floating name labels (Orbitron font)** `ux`  
@@ -29,11 +29,20 @@
 - [x] **Search bar → flyTo() selected asteroid** `ux`  
   NavigationSidebar search filters 500 asteroids; click any → smooth camera fly.
 
+- [ ] **Spectral type legend overlay** `ux`  
+  Small corner legend showing C=blue, S=amber, M=silver, X=purple, unknown=gray. Without it the color coding is meaningless to new users.
+
+- [ ] **Resource filter in sidebar** `ux` `science`  
+  Let users filter the asteroid list by what they want to harvest — water (C-types), metals (S/M-types), PGMs (M-types). The natural next step from spectral type coloring.
+
 - [ ] **Highlight Earth-orbit crossing point on selected orbit** `ux` `stretch`  
   Mark the exact ecliptic intersection visually. Note: computing the crossing point from Keplerian elements is non-trivial — treat as a stretch goal.
 
 - [ ] **Time-based orbit animation** `ux`  
   Cesium is built for this. Show real asteroid positions at a given date; let users scrub through time to watch orbits animate. The most visually striking feature on this list.
+
+- [ ] **Make 3D navigation more user-friendly** `ux` `investigation`  
+  Cesium's default mouse controls (drag-to-rotate, right-click-to-zoom, middle-to-pan) are unfamiliar to most users. Investigate: camera inertia tuning, scroll-to-zoom sensitivity, a visible scale indicator, a "reset view" button, and possibly swapping to a more intuitive control scheme. Goal: a first-time user should feel oriented within 10 seconds without reading docs.
 
 ---
 
@@ -45,7 +54,7 @@
 - [ ] **Sun glow at origin** `data`  
   Already placed as a point primitive — make it visually prominent (bloom / halo effect).
 
-- [ ] **Main asteroid belt context ring** `data`  
+- [x] **Main asteroid belt context ring** `data`  
   Faint stylized ring between Mars and Jupiter. The solar system looks empty past Mars without it; gives inner-system objects better spatial context.
 
 ---
@@ -55,15 +64,11 @@
 - [ ] **Delta-v estimates** `science`  
   The accessibility score approximates orbital similarity to Earth, but actual estimated delta-v (km/s from Earth) is the scientifically meaningful number for mission planning. Add to the scoring model.
 
-- [ ] **Spectral type coloring** `science`  
-  C-type (water/organics), S-type (silicates), M-type (metals) have completely different resource profiles. Fetch spectral type from JPL and add as a color-by option in the frontend.
+- [x] **Spectral type coloring** `science`  
+  C-type (water/organics), S-type (silicates), M-type (metals) have completely different resource profiles. Fetched from JPL `spec_B` field; color-by-spectral-type is now the default view mode.
 
----
-
-## UX — Navigation Feel
-
-- [ ] **Make 3D navigation more user-friendly** `ux` `investigation`  
-  Cesium's default mouse controls (drag-to-rotate, right-click-to-zoom, middle-to-pan) are unfamiliar to most users. Investigate: camera inertia tuning, scroll-to-zoom sensitivity, a visible scale indicator, a "reset view" button, and possibly swapping to a more intuitive control scheme. Goal: a first-time user should feel oriented within 10 seconds without reading docs.
+- [ ] **Earth-impact equivalencies in resource card** `science`  
+  Replace raw kg values with human-scale comparisons: "enough platinum to supply X years of global EV production", "enough water to sustain a lunar base for Y years." Makes the environmental case visceral rather than abstract.
 
 ---
 

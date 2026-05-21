@@ -39,7 +39,12 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'{len\\(d\\)} rows'\\); print\\(d[0]['name'], d[0]['semi_major_axis_au']\\)\")",
       "Bash(npx playwright *)",
       "Bash(npx vitest *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(ruff check *)",
+      "Bash(git log *)",
+      "Bash(python -m pytest tests/ingest/test_jpl_bulk_normalization.py -q)",
+      "Bash(python -m pytest tests/ingest/test_jpl_bulk_normalization.py -q --no-cov)",
+      "Bash(python *)"
     ]
   }
 }
