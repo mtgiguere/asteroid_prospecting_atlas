@@ -117,10 +117,10 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       // Sol — 4-layer glow (outer halo + mid corona + bright core + white hot centre)
       const sunPoints = new PointPrimitiveCollection()
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 160, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 90,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 200, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 120, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 28,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
       scene.primitives.add(sunPoints)
 
       // Sol label
@@ -157,15 +157,6 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       PLANETS.forEach((p) => {
         const rad = (p.angleDeg * Math.PI) / 180
         const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
-        if (p.id !== 'earth' && p.id !== 'jupiter') {
-          planetPoints.add({
-            position: pos,
-            color: Color.fromCssColorString(p.color),
-            pixelSize: p.pointSize,
-            disableDepthTestDistance: Number.POSITIVE_INFINITY,
-            id: `planet:${p.id}`,
-          })
-        }
         planetLabels.add({
           position: pos,
           text: p.name,
@@ -211,38 +202,50 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       }
     }, [viewer])
 
-    // Earth + Jupiter — multi-layer glows; excluded from generic planetPoints above
+    // All planets — multi-layer glows; picking ID on core layer
     useEffect(() => {
       if (!viewer) return
 
       const scene = viewer.scene
+      const allPlanetPoints = new PointPrimitiveCollection()
 
-      const earth = PLANETS.find((p) => p.id === 'earth')!
-      const earthRad = (earth.angleDeg * Math.PI) / 180
-      const earthPos = new Cartesian3(Math.cos(earthRad) * earth.sma * AU_M, Math.sin(earthRad) * earth.sma * AU_M, 0)
+      PLANETS.forEach((p) => {
+        const rad = (p.angleDeg * Math.PI) / 180
+        const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
 
-      const earthPoints = new PointPrimitiveCollection()
-      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#1a4a8a').withAlpha(0.20), pixelSize: 110, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#2266bb').withAlpha(0.45), pixelSize: 55,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#55aaee').withAlpha(0.80), pixelSize: 30,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      earthPoints.add({ position: earthPos, color: Color.fromCssColorString('#cceeff'),                 pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      scene.primitives.add(earthPoints)
+        if (p.id === 'mercury') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#aaaaaa').withAlpha(0.12), pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#bbbbbb').withAlpha(0.42), pixelSize: 32,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cccccc').withAlpha(0.80), pixelSize: 16,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#dddddd'),                 pixelSize: 8,   disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:mercury' })
+        } else if (p.id === 'venus') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#c8a840').withAlpha(0.13), pixelSize: 80,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#d8bc60').withAlpha(0.44), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ecd880').withAlpha(0.82), pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#f0d080'),                 pixelSize: 10,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:venus' })
+        } else if (p.id === 'earth') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#1a4a8a').withAlpha(0.20), pixelSize: 140, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#2266bb').withAlpha(0.45), pixelSize: 72,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#55aaee').withAlpha(0.80), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cceeff'),                 pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:earth' })
+        } else if (p.id === 'mars') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#8a2a1a').withAlpha(0.12), pixelSize: 70,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cc4422').withAlpha(0.40), pixelSize: 36,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ee7755').withAlpha(0.78), pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ff8866'),                 pixelSize: 9,   disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:mars' })
+        } else if (p.id === 'jupiter') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#7a5c33').withAlpha(0.18), pixelSize: 150, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#aa8855').withAlpha(0.42), pixelSize: 84,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ccaa77').withAlpha(0.80), pixelSize: 48,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#eecc99'),                 pixelSize: 30,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:jupiter' })
+        }
+      })
 
-      const jupiter = PLANETS.find((p) => p.id === 'jupiter')!
-      const jupiterRad = (jupiter.angleDeg * Math.PI) / 180
-      const jupiterPos = new Cartesian3(Math.cos(jupiterRad) * jupiter.sma * AU_M, Math.sin(jupiterRad) * jupiter.sma * AU_M, 0)
-
-      const jupiterPoints = new PointPrimitiveCollection()
-      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#7a5c33').withAlpha(0.18), pixelSize: 120, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#aa8855').withAlpha(0.42), pixelSize: 65,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#ccaa77').withAlpha(0.80), pixelSize: 36,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      jupiterPoints.add({ position: jupiterPos, color: Color.fromCssColorString('#eecc99'),                 pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      scene.primitives.add(jupiterPoints)
+      scene.primitives.add(allPlanetPoints)
 
       return () => {
         if (!viewer.isDestroyed()) {
-          scene.primitives.remove(earthPoints)
-          scene.primitives.remove(jupiterPoints)
+          scene.primitives.remove(allPlanetPoints)
         }
       }
     }, [viewer])
