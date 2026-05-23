@@ -14,7 +14,13 @@ import {
   Material,
   BoundingSphere,
   Quaternion,
-  CallbackProperty,
+  Matrix3,
+  Matrix4,
+  EllipsoidGeometry,
+  GeometryInstance,
+  Primitive,
+  PerInstanceColorAppearance,
+  ColorGeometryInstanceAttribute,
   defined,
   type Viewer as CesiumViewer,
 } from 'cesium'
@@ -247,7 +253,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       }
     }, [viewer])
 
-    // Earth — textured rotating sphere with atmosphere glow
+    // Earth — rotating sphere with atmosphere glow (Primitive API, same pipeline as rest of scene)
     useEffect(() => {
       if (!viewer) return
       const scene = viewer.scene
@@ -261,39 +267,53 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       )
 
       const EARTH_RADIUS = 2e9
-      // Axial tilt 23.45° — rotation axis tilted from ecliptic normal
       const TILT = (23.45 * Math.PI) / 180
       const tiltAxis = Cartesian3.normalize(
         new Cartesian3(Math.sin(TILT), 0, Math.cos(TILT)),
         new Cartesian3(),
       )
 
-      // Sphere — swap material to ImageMaterialProperty({ image: '/textures/earth_day.jpg' })
-      // for a NASA Blue Marble texture once you have the file in frontend/public/textures/
-      const earthSphere = viewer.entities.add({
-        position: earthPos,
-        ellipsoid: {
-          radii: new Cartesian3(EARTH_RADIUS, EARTH_RADIUS, EARTH_RADIUS),
-          material: Color.fromCssColorString('#1a4f8c'),
-          outline: false,
-        },
-        orientation: new CallbackProperty(
-          (_t, result) => Quaternion.fromAxisAngle(tiltAxis, earthRotationRad(currentMjdRef.current), result),
-          false,
-        ),
-      })
+      const buildMatrix = (angle: number): Matrix4 =>
+        Matrix4.fromRotationTranslation(
+          Matrix3.fromQuaternion(Quaternion.fromAxisAngle(tiltAxis, angle)),
+          earthPos,
+        )
 
-      // Atmosphere glow shell
-      const atmosphere = viewer.entities.add({
-        position: earthPos,
-        ellipsoid: {
-          radii: new Cartesian3(EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08),
-          material: Color.fromCssColorString('#4499ff').withAlpha(0.07),
-          outline: false,
-        },
-      })
+      const earthSphere = scene.primitives.add(
+        new Primitive({
+          geometryInstances: new GeometryInstance({
+            geometry: new EllipsoidGeometry({
+              radii: new Cartesian3(EARTH_RADIUS, EARTH_RADIUS, EARTH_RADIUS),
+              vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT,
+            }),
+            attributes: {
+              color: ColorGeometryInstanceAttribute.fromColor(Color.fromCssColorString('#1a4f8c')),
+            },
+          }),
+          appearance: new PerInstanceColorAppearance({ translucent: false }),
+          modelMatrix: buildMatrix(earthRotationRad(currentMjdRef.current)),
+          asynchronous: false,
+        }),
+      )
 
-      // Transparent PointPrimitive keeps the existing click-picking working (string id)
+      const atmosphere = scene.primitives.add(
+        new Primitive({
+          geometryInstances: new GeometryInstance({
+            geometry: new EllipsoidGeometry({
+              radii: new Cartesian3(EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08),
+              vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT,
+            }),
+            attributes: {
+              color: ColorGeometryInstanceAttribute.fromColor(Color.fromCssColorString('#4499ff').withAlpha(0.07)),
+            },
+          }),
+          appearance: new PerInstanceColorAppearance({ translucent: true }),
+          modelMatrix: Matrix4.fromTranslation(earthPos),
+          asynchronous: false,
+        }),
+      )
+
+      // Transparent point keeps the existing string-id click handler working
       const pickPoints = new PointPrimitiveCollection()
       pickPoints.add({
         position: earthPos,
@@ -304,10 +324,18 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(pickPoints)
 
+      // Update rotation each frame via preRender
+      const stopRotation = scene.preRender.addEventListener(() => {
+        if (!earthSphere.isDestroyed()) {
+          earthSphere.modelMatrix = buildMatrix(earthRotationRad(currentMjdRef.current))
+        }
+      })
+
       return () => {
+        stopRotation()
         if (!viewer.isDestroyed()) {
-          viewer.entities.remove(earthSphere)
-          viewer.entities.remove(atmosphere)
+          scene.primitives.remove(earthSphere)
+          scene.primitives.remove(atmosphere)
           scene.primitives.remove(pickPoints)
         }
       }
