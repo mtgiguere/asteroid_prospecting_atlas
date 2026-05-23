@@ -13,13 +13,15 @@ import {
   ScreenSpaceEventType,
   Material,
   BoundingSphere,
+  Quaternion,
+  CallbackProperty,
   defined,
   type Viewer as CesiumViewer,
 } from 'cesium'
 import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
 import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
-import { positionAtMjd } from '../utils/orbitMechanics'
+import { positionAtMjd, earthRotationRad } from '../utils/orbitMechanics'
 import { useOrbitAnimation } from '../hooks/useOrbitAnimation'
 import { scoreToHex } from '../utils/colorScale'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
@@ -223,11 +225,6 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#d8bc60').withAlpha(0.44), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ecd880').withAlpha(0.82), pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#f0d080'),                 pixelSize: 10,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:venus' })
-        } else if (p.id === 'earth') {
-          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#1a4a8a').withAlpha(0.20), pixelSize: 140, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#2266bb').withAlpha(0.45), pixelSize: 72,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#55aaee').withAlpha(0.80), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cceeff'),                 pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:earth' })
         } else if (p.id === 'mars') {
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#8a2a1a').withAlpha(0.12), pixelSize: 70,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cc4422').withAlpha(0.40), pixelSize: 36,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
@@ -246,6 +243,72 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(allPlanetPoints)
+        }
+      }
+    }, [viewer])
+
+    // Earth — textured rotating sphere with atmosphere glow
+    useEffect(() => {
+      if (!viewer) return
+      const scene = viewer.scene
+
+      const earth = PLANETS.find((p) => p.id === 'earth')!
+      const rad = (earth.angleDeg * Math.PI) / 180
+      const earthPos = new Cartesian3(
+        Math.cos(rad) * earth.sma * AU_M,
+        Math.sin(rad) * earth.sma * AU_M,
+        0,
+      )
+
+      const EARTH_RADIUS = 2e9
+      // Axial tilt 23.45° — rotation axis tilted from ecliptic normal
+      const TILT = (23.45 * Math.PI) / 180
+      const tiltAxis = Cartesian3.normalize(
+        new Cartesian3(Math.sin(TILT), 0, Math.cos(TILT)),
+        new Cartesian3(),
+      )
+
+      // Sphere — swap material to ImageMaterialProperty({ image: '/textures/earth_day.jpg' })
+      // for a NASA Blue Marble texture once you have the file in frontend/public/textures/
+      const earthSphere = viewer.entities.add({
+        position: earthPos,
+        ellipsoid: {
+          radii: new Cartesian3(EARTH_RADIUS, EARTH_RADIUS, EARTH_RADIUS),
+          material: Color.fromCssColorString('#1a4f8c'),
+          outline: false,
+        },
+        orientation: new CallbackProperty(
+          (_t, result) => Quaternion.fromAxisAngle(tiltAxis, earthRotationRad(currentMjdRef.current), result),
+          false,
+        ),
+      })
+
+      // Atmosphere glow shell
+      const atmosphere = viewer.entities.add({
+        position: earthPos,
+        ellipsoid: {
+          radii: new Cartesian3(EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08),
+          material: Color.fromCssColorString('#4499ff').withAlpha(0.07),
+          outline: false,
+        },
+      })
+
+      // Transparent PointPrimitive keeps the existing click-picking working (string id)
+      const pickPoints = new PointPrimitiveCollection()
+      pickPoints.add({
+        position: earthPos,
+        color: Color.TRANSPARENT,
+        pixelSize: 28,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        id: 'planet:earth',
+      })
+      scene.primitives.add(pickPoints)
+
+      return () => {
+        if (!viewer.isDestroyed()) {
+          viewer.entities.remove(earthSphere)
+          viewer.entities.remove(atmosphere)
+          scene.primitives.remove(pickPoints)
         }
       }
     }, [viewer])
