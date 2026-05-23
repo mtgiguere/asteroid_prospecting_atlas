@@ -4,7 +4,9 @@ A scientifically grounded 3D solar system explorer that ranks near-Earth asteroi
 
 **[Live Demo →](https://asteroidprospectingatlas-production.up.railway.app)**
 
-![Asteroid Prospecting Atlas](docs/screenshot.png)
+| Cesium renderer | Spacekit.js renderer |
+|---|---|
+| ![Cesium view](docs/cesium.png) | ![Spacekit view](docs/spacekit.png) |
 
 ---
 
