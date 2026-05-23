@@ -231,6 +231,11 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#d8bc60').withAlpha(0.44), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ecd880').withAlpha(0.82), pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#f0d080'),                 pixelSize: 10,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:venus' })
+        } else if (p.id === 'earth') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#1a4a8a').withAlpha(0.20), pixelSize: 140, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#2266bb').withAlpha(0.45), pixelSize: 72,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#55aaee').withAlpha(0.80), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cceeff'),                 pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:earth' })
         } else if (p.id === 'mars') {
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#8a2a1a').withAlpha(0.12), pixelSize: 70,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cc4422').withAlpha(0.40), pixelSize: 36,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
