@@ -1,16 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createRef } from 'react'
 import { render, screen } from '@testing-library/react'
 import { SpacekitViewer } from '../SpacekitViewer'
+import type { SolarSystemViewerHandle } from '../SpacekitViewer'
 import type { AsteroidOrbit } from '../../types'
 
-const mockSpaceObject = { getPosition: () => ({ x: 0, y: 0, z: 0 }) }
 const mockCanvas = document.createElement('canvas')
+const mockControls = {
+  target: { set: vi.fn() },
+  update: vi.fn(),
+  enableDamping: true,
+  enableDamping_calls: [] as string[],
+}
 const mockCamera = {
-  position: { x: 0, y: 0, z: 200 },
+  position: { set: vi.fn() },
   lookAt: vi.fn(),
   projectionMatrix: { elements: new Array(16).fill(0) },
   matrixWorldInverse: { elements: new Array(16).fill(0) },
 }
+const mockSpaceObject = { getPosition: vi.fn().mockReturnValue([50, 30, 5]) }
 
 vi.mock('spacekit.js', () => {
   class MockSimulation {
@@ -21,7 +29,10 @@ vi.mock('spacekit.js', () => {
     setJd = vi.fn()
     getJd = vi.fn().mockReturnValue(2451545.0)
     getScene = vi.fn().mockReturnValue({ children: [] })
-    getCamera = vi.fn().mockReturnValue(mockCamera)
+    getViewer = vi.fn().mockReturnValue({
+      get3jsCamera: () => mockCamera,
+      get3jsCameraControls: () => mockControls,
+    })
     getRenderer = vi.fn().mockReturnValue({ domElement: mockCanvas })
     stop = vi.fn()
   }
@@ -88,5 +99,40 @@ describe('SpacekitViewer', () => {
   it('renders with empty asteroid list', () => {
     render(<SpacekitViewer {...baseProps} asteroids={[]} />)
     expect(screen.getByTestId('spacekit-container')).toBeInTheDocument()
+  })
+})
+
+describe('SpacekitViewer flyTo', () => {
+  it('calls controls.update twice when flying to an asteroid (double-flush pattern)', () => {
+    const ref = createRef<SolarSystemViewerHandle>()
+    render(<SpacekitViewer {...baseProps} ref={ref} />)
+    ref.current?.flyTo({ kind: 'asteroid', asteroid })
+    expect(mockControls.update).toHaveBeenCalledTimes(2)
+  })
+
+  it('disables then re-enables damping when flying to an asteroid', () => {
+    const dampingSequence: boolean[] = []
+    const originalDesc = Object.getOwnPropertyDescriptor(mockControls, 'enableDamping')
+    let dampingValue = true
+    Object.defineProperty(mockControls, 'enableDamping', {
+      get: () => dampingValue,
+      set: (v: boolean) => { dampingValue = v; dampingSequence.push(v) },
+      configurable: true,
+    })
+    mockControls.update = vi.fn()
+    const ref = createRef<SolarSystemViewerHandle>()
+    render(<SpacekitViewer {...baseProps} ref={ref} />)
+    ref.current?.flyTo({ kind: 'asteroid', asteroid })
+    expect(dampingSequence).toContain(false)
+    expect(dampingValue).toBe(true)
+    if (originalDesc) Object.defineProperty(mockControls, 'enableDamping', originalDesc)
+  })
+
+  it('sets camera position when flying to sol', () => {
+    const ref = createRef<SolarSystemViewerHandle>()
+    render(<SpacekitViewer {...baseProps} ref={ref} />)
+    ref.current?.flyTo({ kind: 'sol' })
+    expect(mockCamera.position.set).toHaveBeenCalled()
+    expect(mockControls.update).toHaveBeenCalled()
   })
 })
