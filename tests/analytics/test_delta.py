@@ -2,7 +2,6 @@ import pytest
 
 from asteroid_atlas.analytics.delta_v import estimate_delta_v
 
-
 # --- Zero cases ---
 
 def test_zero_for_circular_coplanar_earth_orbit():
