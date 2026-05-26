@@ -293,17 +293,26 @@ export const SpacekitViewer = forwardRef<SolarSystemViewerHandle, Props>(
       const cam = sim.getViewer().get3jsCamera()
       const controls = sim.getViewer().get3jsCameraControls()
 
-      let tx = 0, ty = 0, tz = 0
+      // OrbitControls accumulates sphericalDelta from user interaction. With damping
+      // disabled, update() applies then zeroes that delta in one pass. A second
+      // update() then snaps the camera to the exact requested position with no residual.
+      const snap = (px: number, py: number, pz: number, tx: number, ty: number, tz: number) => {
+        controls.enableDamping = false
+        cam.position.set(px, py, pz)
+        controls.target.set(tx, ty, tz)
+        controls.update()   // flushes accumulated sphericalDelta
+        cam.position.set(px, py, pz)
+        controls.target.set(tx, ty, tz)
+        controls.update()   // clean snap with zeroed delta
+        controls.enableDamping = true
+      }
 
       if (target.kind === 'sol') {
-        tx = 0; ty = 0; tz = 0
-        cam.position.set(0, -180, 120)
-        cam.lookAt(tx, ty, tz)
-        controls.target.set(tx, ty, tz)
-        // Reset damping state so it doesn't fight the new position
-        controls.update()
+        snap(0, -180, 120, 0, 0, 0)
         return
       }
+
+      let tx = 0, ty = 0, tz = 0
 
       if (target.kind === 'planet') {
         const planet = PLANETS.find((p) => p.id === target.planetId)
@@ -319,13 +328,7 @@ export const SpacekitViewer = forwardRef<SolarSystemViewerHandle, Props>(
       }
 
       const offset = target.kind === 'planet' ? 20 : 30
-      cam.position.set(tx, ty - offset, tz + offset)
-      cam.lookAt(tx, ty, tz)
-      controls.target.set(tx, ty, tz)
-      // Disable/re-enable damping to flush internal state so the camera snaps instantly
-      controls.enableDamping = false
-      controls.update()
-      controls.enableDamping = true
+      snap(tx, ty - offset, tz + offset, tx, ty, tz)
     }
 
     useImperativeHandle(ref, () => ({
