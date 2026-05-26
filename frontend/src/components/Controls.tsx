@@ -64,7 +64,7 @@ export function Controls({
           >
             <option value="spectral_type">Spectral Type</option>
             <option value="prospecting_score">Prospecting Score</option>
-            <option value="accessibility_score">Accessibility Score</option>
+            <option value="accessibility_score">Delta-v (km/s)</option>
           </select>
         </label>
       </div>

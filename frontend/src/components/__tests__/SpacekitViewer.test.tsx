@@ -48,7 +48,8 @@ const asteroid: AsteroidOrbit = {
   perihelion_au: 1.05,
   aphelion_au: 1.95,
   earth_orbit_crossing: false,
-  accessibility_score: 0.7,
+  delta_v_kms: 3.5,
+  accessibility_score: 3.5,
   prospecting_score: 0.8,
   resource_profile: {
     type_group: 'S',

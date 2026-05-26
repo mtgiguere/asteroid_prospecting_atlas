@@ -139,6 +139,7 @@ def list_asteroids_for_visualization(
                 "perihelion_au": round(perihelion, 6),
                 "aphelion_au": round(aphelion, 6),
                 "earth_orbit_crossing": earth_crossing,
+                "delta_v_kms": round(accessibility_score, 2),
                 "accessibility_score": round(accessibility_score, 4),
                 "prospecting_score": round(prospecting_score, 4),
             }
