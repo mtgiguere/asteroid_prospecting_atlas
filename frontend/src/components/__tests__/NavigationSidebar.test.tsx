@@ -26,6 +26,14 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
   delta_v_kms: 4.8,
   accessibility_score: 4.8,
   prospecting_score: 0.8,
+  mission_roi: {
+    resource_value_usd: 2.5e12,
+    resource_value_label: '$2.5T',
+    reach_rating: 'MODERATE',
+    reach_summary: '~67% of launch mass must be propellant',
+    mission_grade: 'STRONG',
+    summary: 'High-value iron, nickel, and silicates, within practical mission range.',
+  },
   resource_profile: {
     type_group: 'S',
     type_label: 'Silicaceous (S-type)',

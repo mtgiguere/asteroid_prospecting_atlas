@@ -1,26 +1,10 @@
 import type { AsteroidOrbit } from '../types'
-import { scoreToHex } from '../utils/colorScale'
 import { ResourceCard } from './ResourceCard'
 import styles from './AsteroidInfoPanel.module.css'
 
 interface Props {
   asteroid: AsteroidOrbit
-  allAsteroids: AsteroidOrbit[]
   onClose: () => void
-}
-
-function ScoreBar({ score, min, max, unit }: { score: number; min: number; max: number; unit?: string }) {
-  const pct = max === min ? 0 : ((score - min) / (max - min)) * 100
-  const color = scoreToHex(score, min, max)
-  const label = unit ? `${score.toFixed(2)} ${unit}` : score.toFixed(3)
-  return (
-    <div className={styles.scoreBarWrap}>
-      <div className={styles.scoreBarTrack}>
-        <div className={styles.scoreBarFill} style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <span className={styles.scoreValue} style={{ color }}>{label}</span>
-    </div>
-  )
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -32,9 +16,8 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
-  const allProspecting = allAsteroids.map((a) => a.prospecting_score)
-  const allAccess = allAsteroids.map((a) => a.delta_v_kms)
+export function AsteroidInfoPanel({ asteroid, onClose }: Props) {
+  const roi = asteroid.mission_roi
 
   return (
     <div className={styles.panel}>
@@ -51,24 +34,18 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
       )}
 
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>SCORES</div>
-        <div className={styles.scoreLine}>
-          <span className={styles.scoreLabel}>PROSPECTING</span>
-          <ScoreBar
-            score={asteroid.prospecting_score}
-            min={Math.min(...allProspecting)}
-            max={Math.max(...allProspecting)}
-          />
+        <div className={styles.sectionTitle}>MISSION ANALYSIS</div>
+
+        <div className={styles.roiValue}>{roi.resource_value_label}</div>
+        <div className={styles.roiGrade} data-grade={roi.mission_grade}>{roi.mission_grade}</div>
+
+        <div className={styles.roiReach}>
+          <span className={styles.roiReachLabel}>REACH</span>
+          <span className={styles.roiReachValue}>{roi.reach_rating}</span>
         </div>
-        <div className={styles.scoreLine}>
-          <span className={styles.scoreLabel}>DELTA-V</span>
-          <ScoreBar
-            score={asteroid.delta_v_kms}
-            min={Math.min(...allAccess)}
-            max={Math.max(...allAccess)}
-            unit="km/s"
-          />
-        </div>
+        <div className={styles.roiFuelNote}>{roi.reach_summary}</div>
+
+        <div className={styles.roiSummary}>{roi.summary}</div>
       </div>
 
       <div className={styles.section}>

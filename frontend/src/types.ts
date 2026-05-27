@@ -8,6 +8,15 @@ export interface LaunchWindow {
   repeat_label: string
 }
 
+export interface MissionRoi {
+  resource_value_usd: number
+  resource_value_label: string
+  reach_rating: string
+  reach_summary: string
+  mission_grade: string
+  summary: string
+}
+
 export interface ResourceProfile {
   type_group: string
   type_label: string
@@ -43,6 +52,7 @@ export interface AsteroidOrbit {
   prospecting_score: number
   resource_profile: ResourceProfile
   launch_window: LaunchWindow
+  mission_roi: MissionRoi
 }
 
 export type ColorMode = 'spectral_type' | 'prospecting_score' | 'accessibility_score'
