@@ -4,6 +4,7 @@ from asteroid_atlas.analytics.delta_v import estimate_delta_v
 
 # --- Zero cases ---
 
+
 def test_zero_for_circular_coplanar_earth_orbit():
     # A perfectly Earth-like orbit needs no delta-v
     assert estimate_delta_v(a=1.0, e=0.0, i_deg=0.0) == pytest.approx(0.0, abs=1e-9)
@@ -18,6 +19,7 @@ def test_zero_departure_for_earth_crossing_orbit():
 
 
 # --- Ordering ---
+
 
 def test_inclination_increases_delta_v():
     coplanar = estimate_delta_v(a=1.5, e=0.1, i_deg=0.0)
@@ -40,6 +42,7 @@ def test_higher_eccentricity_affects_delta_v():
 
 # --- Known reference values (Hohmann, textbook) ---
 
+
 def test_mars_hohmann_approx():
     # Mars: a≈1.524 AU, e≈0.093, i≈1.85° → textbook ~5.6 km/s heliocentric
     dv = estimate_delta_v(a=1.524, e=0.093, i_deg=1.85)
@@ -54,12 +57,13 @@ def test_bennu_approx():
 
 # --- Always positive ---
 
+
 def test_always_positive():
     cases = [
-        (0.7, 0.1, 5.0),   # Aten (inner)
+        (0.7, 0.1, 5.0),  # Aten (inner)
         (1.0, 0.1, 10.0),  # Earth-crossing, inclined
-        (1.5, 0.3, 0.0),   # Apollo outer
-        (2.8, 0.15, 25.0), # Main belt
+        (1.5, 0.3, 0.0),  # Apollo outer
+        (2.8, 0.15, 25.0),  # Main belt
     ]
     for a, e, i in cases:
         assert estimate_delta_v(a, e, i) >= 0.0
