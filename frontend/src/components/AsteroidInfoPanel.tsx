@@ -9,15 +9,16 @@ interface Props {
   onClose: () => void
 }
 
-function ScoreBar({ score, min, max }: { score: number; min: number; max: number }) {
+function ScoreBar({ score, min, max, unit }: { score: number; min: number; max: number; unit?: string }) {
   const pct = max === min ? 0 : ((score - min) / (max - min)) * 100
   const color = scoreToHex(score, min, max)
+  const label = unit ? `${score.toFixed(2)} ${unit}` : score.toFixed(3)
   return (
     <div className={styles.scoreBarWrap}>
       <div className={styles.scoreBarTrack}>
         <div className={styles.scoreBarFill} style={{ width: `${pct}%`, background: color }} />
       </div>
-      <span className={styles.scoreValue} style={{ color }}>{score.toFixed(3)}</span>
+      <span className={styles.scoreValue} style={{ color }}>{label}</span>
     </div>
   )
 }
@@ -33,7 +34,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
   const allProspecting = allAsteroids.map((a) => a.prospecting_score)
-  const allAccess = allAsteroids.map((a) => a.accessibility_score)
+  const allAccess = allAsteroids.map((a) => a.delta_v_kms)
 
   return (
     <div className={styles.panel}>
@@ -60,11 +61,12 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
           />
         </div>
         <div className={styles.scoreLine}>
-          <span className={styles.scoreLabel}>ACCESSIBILITY</span>
+          <span className={styles.scoreLabel}>DELTA-V</span>
           <ScoreBar
-            score={asteroid.accessibility_score}
+            score={asteroid.delta_v_kms}
             min={Math.min(...allAccess)}
             max={Math.max(...allAccess)}
+            unit="km/s"
           />
         </div>
       </div>
