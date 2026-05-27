@@ -28,6 +28,7 @@ export interface AsteroidOrbit {
   perihelion_au: number
   aphelion_au: number
   earth_orbit_crossing: boolean
+  delta_v_kms: number
   accessibility_score: number
   prospecting_score: number
   resource_profile: ResourceProfile

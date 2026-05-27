@@ -23,7 +23,8 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
   perihelion_au: 1.133,
   aphelion_au: 1.783,
   earth_orbit_crossing: false,
-  accessibility_score: 1.2,
+  delta_v_kms: 4.8,
+  accessibility_score: 4.8,
   prospecting_score: 0.8,
   resource_profile: {
     type_group: 'S',
