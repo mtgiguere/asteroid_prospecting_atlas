@@ -97,6 +97,15 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
         />
       </div>
 
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>NEXT LAUNCH WINDOW</div>
+        <div className={styles.windowLabel}>{asteroid.launch_window.window_label}</div>
+        <Row label="Launch" value={asteroid.launch_window.launch_date} />
+        <Row label="Arrival" value={asteroid.launch_window.arrival_date} />
+        <Row label="Transit" value={`${Math.round(asteroid.launch_window.transit_days)} days`} />
+        <div className={styles.windowRepeat}>{asteroid.launch_window.repeat_label}</div>
+      </div>
+
       <div className={styles.legend}>
         <div className={styles.legendTitle}>SCORE LEGEND</div>
         <div className={styles.legendBar} />
