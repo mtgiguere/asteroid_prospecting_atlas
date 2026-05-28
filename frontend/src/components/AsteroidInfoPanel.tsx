@@ -1,4 +1,4 @@
-import type { AsteroidOrbit } from '../types'
+import type { AsteroidOrbit, CostTiers } from '../types'
 import { ResourceCard } from './ResourceCard'
 import styles from './AsteroidInfoPanel.module.css'
 
@@ -12,6 +12,36 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className={styles.row}>
       <span className={styles.rowLabel}>{label}</span>
       <span className={styles.rowValue}>{value}</span>
+    </div>
+  )
+}
+
+const TIER_LABELS: Record<string, string> = {
+  flyby: 'Flyby',
+  rendezvous: 'Rendezvous',
+  sample_return: 'Sample Return',
+}
+
+function CostTiersTable({ tiers }: { tiers: CostTiers }) {
+  const tierKeys = ['flyby', 'rendezvous', 'sample_return'] as const
+  return (
+    <div className={styles.costTable}>
+      {tierKeys.map((key) => {
+        const t = tiers[key]
+        const isRec = tiers.recommended === key
+        return (
+          <div key={key} className={styles.costRow} data-recommended={isRec || undefined}>
+            <span className={styles.costTierName}>
+              {TIER_LABELS[key]}
+              {isRec && <span className={styles.recBadge}>REC</span>}
+            </span>
+            <span className={styles.costAmount}>{t.cost_label}</span>
+            <span className={styles.costRoi} data-positive={t.roi_ratio >= 1 || undefined}>
+              {t.roi_label}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -46,6 +76,9 @@ export function AsteroidInfoPanel({ asteroid, onClose }: Props) {
         <div className={styles.roiFuelNote}>{roi.reach_summary}</div>
 
         <div className={styles.roiSummary}>{roi.summary}</div>
+
+        <div className={styles.costSectionTitle}>MISSION COST MODEL</div>
+        <CostTiersTable tiers={roi.cost_tiers} />
       </div>
 
       <div className={styles.section}>
