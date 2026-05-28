@@ -83,6 +83,12 @@ export const SpacekitViewer = forwardRef<SolarSystemViewerHandle, Props>(
         },
       })
 
+      // jdDelta: 0 is falsy in Spacekit's animate() ternary, so the sim auto-advances
+      // using jdPerSecond instead. Calling stop() sets isPaused=true which prevents
+      // JD auto-advance while keeping the Three.js render loop alive for camera movement.
+      // We drive time exclusively via setJd() in the currentMjd effect below.
+      sim.stop()
+
       sim.createStars()
       sim.createSphere('sol', { color: 0xffee44, radius: 0.05, basePath: '/spacekit/' })
 

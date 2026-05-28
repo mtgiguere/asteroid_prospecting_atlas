@@ -5,6 +5,9 @@ import { SpacekitViewer } from '../SpacekitViewer'
 import type { SolarSystemViewerHandle } from '../SpacekitViewer'
 import type { AsteroidOrbit } from '../../types'
 
+// vi.hoisted ensures mockStop is defined before vi.mock hoisting runs
+const mockStop = vi.hoisted(() => vi.fn())
+
 const mockCanvas = document.createElement('canvas')
 const mockControls = {
   target: { set: vi.fn() },
@@ -34,7 +37,7 @@ vi.mock('spacekit.js', () => {
       get3jsCameraControls: () => mockControls,
     })
     getRenderer = vi.fn().mockReturnValue({ domElement: mockCanvas })
-    stop = vi.fn()
+    stop = mockStop
   }
   class MockEphem {}
   return { Simulation: MockSimulation, Ephem: MockEphem }
@@ -123,6 +126,11 @@ describe('SpacekitViewer', () => {
   it('renders with empty asteroid list', () => {
     render(<SpacekitViewer {...baseProps} asteroids={[]} />)
     expect(screen.getByTestId('spacekit-container')).toBeInTheDocument()
+  })
+
+  it('calls stop() on mount so Spacekit does not auto-advance JD (jdDelta:0 is falsy)', () => {
+    render(<SpacekitViewer {...baseProps} />)
+    expect(mockStop).toHaveBeenCalled()
   })
 })
 
