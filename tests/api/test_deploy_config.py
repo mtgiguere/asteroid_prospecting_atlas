@@ -19,6 +19,20 @@ def test_normalise_db_url_leaves_psycopg_url_unchanged():
     assert _normalise_db_url(url) == url
 
 
+def test_normalise_db_url_rewrites_psycopg2_scheme():
+    from asteroid_atlas.db.session import _normalise_db_url
+
+    result = _normalise_db_url("postgresql+psycopg2://user:pass@host:5432/db")
+    assert result == "postgresql+psycopg://user:pass@host:5432/db"
+
+
+def test_normalise_db_url_rewrites_postgres_shorthand():
+    from asteroid_atlas.db.session import _normalise_db_url
+
+    result = _normalise_db_url("postgres://user:pass@host:5432/db")
+    assert result == "postgresql+psycopg://user:pass@host:5432/db"
+
+
 def test_normalise_db_url_leaves_other_schemes_unchanged():
     from asteroid_atlas.db.session import _normalise_db_url
 
