@@ -62,6 +62,14 @@ const asteroid: AsteroidOrbit = {
   delta_v_kms: 3.5,
   accessibility_score: 3.5,
   prospecting_score: 0.8,
+  mission_roi: {
+    resource_value_usd: 1e12,
+    resource_value_label: '$1.0T',
+    reach_rating: 'MODERATE',
+    reach_summary: '~55% of launch mass must be propellant',
+    mission_grade: 'STRONG',
+    summary: 'High-value iron, nickel, and silicates, within practical mission range.',
+  },
   resource_profile: {
     type_group: 'S',
     type_label: 'Silicaceous',

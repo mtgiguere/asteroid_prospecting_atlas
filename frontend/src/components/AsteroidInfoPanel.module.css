@@ -156,6 +156,70 @@
   margin-top: 6px;
 }
 
+.roiValue {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+}
+
+.roiGrade {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+}
+
+.roiGrade[data-grade="EXCEPTIONAL"] { background: rgba(0,255,140,0.15); color: #00ff8c; border: 1px solid rgba(0,255,140,0.4); }
+.roiGrade[data-grade="STRONG"]      { background: rgba(0,212,255,0.12); color: #00d4ff; border: 1px solid rgba(0,212,255,0.35); }
+.roiGrade[data-grade="MODERATE"]    { background: rgba(255,210,0,0.12);  color: #ffd200; border: 1px solid rgba(255,210,0,0.35);  }
+.roiGrade[data-grade="MARGINAL"]    { background: rgba(255,140,0,0.12);  color: #ff8c00; border: 1px solid rgba(255,140,0,0.35);  }
+.roiGrade[data-grade="LONG SHOT"]   { background: rgba(255,50,30,0.12);  color: #ff321e; border: 1px solid rgba(255,50,30,0.35);  }
+
+.roiReach {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.roiReachLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.roiReachValue {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.roiFuelNote {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.roiSummary {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.04);
+  border-left: 2px solid rgba(0,212,255,0.3);
+  border-radius: 0 4px 4px 0;
+}
+
 .legend {
   padding: 14px 16px;
   margin-top: auto;
