@@ -270,11 +270,18 @@ describe('NavigationSidebar', () => {
       return screen.getAllByTestId('asteroid-list-item').map((el) => el.textContent ?? '')
     }
 
-    it('renders Score, Delta-v, and Name sort buttons', () => {
+    function sortSelect() {
+      return screen.getByRole('combobox', { name: /sort/i })
+    }
+
+    it('renders a sort dropdown with all five options', () => {
       render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
-      expect(screen.getByRole('button', { name: /score/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /delta-v/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /name/i })).toBeInTheDocument()
+      expect(sortSelect()).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /score/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /delta-v/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /name/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /window/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /value/i })).toBeInTheDocument()
     })
 
     it('default sort is by prospecting score ascending — best score first', () => {
@@ -284,9 +291,14 @@ describe('NavigationSidebar', () => {
       expect(names[1]).toMatch(/Zeta Rock/)
     })
 
+    it('sort select default value is score', () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      expect(sortSelect()).toHaveValue('score')
+    })
+
     it('Delta-v sort puts lowest delta-v first', async () => {
       render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
-      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
       const names = asteroidNames()
       expect(names[0]).toMatch(/Zeta Rock/)
       expect(names[1]).toMatch(/Alpha Stone/)
@@ -294,18 +306,16 @@ describe('NavigationSidebar', () => {
 
     it('Name sort puts asteroids in alphabetical order', async () => {
       render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
-      await userEvent.click(screen.getByRole('button', { name: /name/i }))
+      await userEvent.selectOptions(sortSelect(), 'name')
       const names = asteroidNames()
       expect(names[0]).toMatch(/Alpha Stone/)
       expect(names[1]).toMatch(/Zeta Rock/)
     })
 
-    it('active sort button has aria-pressed true', async () => {
+    it('sort select value updates when changed', async () => {
       render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
-      expect(screen.getByRole('button', { name: /score/i })).toHaveAttribute('aria-pressed', 'true')
-      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
-      expect(screen.getByRole('button', { name: /delta-v/i })).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByRole('button', { name: /score/i })).toHaveAttribute('aria-pressed', 'false')
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
+      expect(sortSelect()).toHaveValue('delta_v')
     })
 
     it('sort and resource filter apply together', async () => {
@@ -313,7 +323,7 @@ describe('NavigationSidebar', () => {
       const metalB = makeAsteroid({ asteroid_id: 21, name: 'Iron Zeta',  nasa_jpl_id: '2000021', delta_v_kms: 3.0, prospecting_score: 0.7 })
       render(<NavigationSidebar asteroids={[metalA, metalB, C_TYPE]} onFlyTo={vi.fn()} />)
       await userEvent.click(screen.getByRole('button', { name: /metals/i }))
-      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
       expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
       const names = asteroidNames()
       expect(names[0]).toMatch(/Iron Zeta/)
@@ -322,8 +332,8 @@ describe('NavigationSidebar', () => {
 
     it('sort resets correctly when switching back to Score', async () => {
       render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
-      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
-      await userEvent.click(screen.getByRole('button', { name: /score/i }))
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
+      await userEvent.selectOptions(sortSelect(), 'score')
       const names = asteroidNames()
       expect(names[0]).toMatch(/Alpha Stone/)
     })

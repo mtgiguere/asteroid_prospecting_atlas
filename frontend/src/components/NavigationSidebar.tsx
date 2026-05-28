@@ -3,12 +3,14 @@ import { PLANETS } from '../constants/solarSystem'
 import type { AsteroidOrbit, FlyTarget } from '../types'
 
 type ResourceFilter = 'all' | 'water' | 'metals' | 'pgms'
-type SortMode = 'score' | 'delta_v' | 'name'
+type SortMode = 'score' | 'delta_v' | 'name' | 'window' | 'value'
 
 const SORT_MODES: { id: SortMode; label: string }[] = [
   { id: 'score',   label: 'Score'   },
   { id: 'delta_v', label: 'Delta-v' },
   { id: 'name',    label: 'Name'    },
+  { id: 'window',  label: 'Window'  },
+  { id: 'value',   label: 'Value'   },
 ]
 
 function sortAsteroids(asteroids: AsteroidOrbit[], mode: SortMode): AsteroidOrbit[] {
@@ -16,6 +18,14 @@ function sortAsteroids(asteroids: AsteroidOrbit[], mode: SortMode): AsteroidOrbi
   if (mode === 'score')   sorted.sort((a, b) => a.prospecting_score - b.prospecting_score)
   if (mode === 'delta_v') sorted.sort((a, b) => a.delta_v_kms - b.delta_v_kms)
   if (mode === 'name')    sorted.sort((a, b) => a.name.localeCompare(b.name))
+  if (mode === 'window')  sorted.sort((a, b) => {
+    const da = a.launch_window?.days_until_window ?? Infinity
+    const db = b.launch_window?.days_until_window ?? Infinity
+    return da - db
+  })
+  if (mode === 'value')   sorted.sort((a, b) =>
+    (b.mission_roi?.resource_value_usd ?? 0) - (a.mission_roi?.resource_value_usd ?? 0)
+  )
   return sorted
 }
 
@@ -207,28 +217,36 @@ export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
       {/* Asteroids */}
       <div style={S.sectionLabel}>Asteroids</div>
       <div style={S.count}>{filtered.length} bodies</div>
-      <div style={{ display: 'flex', gap: 4, padding: '4px 10px 0' }}>
-        {SORT_MODES.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setSortMode(id)}
-            aria-pressed={sortMode === id}
-            style={{
-              flex: 1,
-              background: sortMode === id ? 'rgba(80,140,255,0.2)' : 'rgba(255,255,255,0.04)',
-              border: `1px solid ${sortMode === id ? 'rgba(80,140,255,0.5)' : 'rgba(80,120,200,0.2)'}`,
-              borderRadius: 3,
-              color: sortMode === id ? '#a8c0e8' : '#4a6a9f',
-              fontSize: 9,
-              letterSpacing: '0.06em',
-              padding: '3px 0',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-mono, monospace)',
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <div style={{ padding: '4px 10px 0' }}>
+        <label
+          htmlFor="sort-select"
+          style={{ display: 'none' }}
+        >
+          Sort
+        </label>
+        <select
+          id="sort-select"
+          aria-label="Sort"
+          value={sortMode}
+          onChange={(e) => setSortMode(e.target.value as SortMode)}
+          style={{
+            width: '100%',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(80,120,200,0.25)',
+            borderRadius: 4,
+            color: '#a8c0e8',
+            fontSize: 10,
+            letterSpacing: '0.06em',
+            padding: '4px 6px',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono, monospace)',
+            outline: 'none',
+          }}
+        >
+          {SORT_MODES.map(({ id, label }) => (
+            <option key={id} value={id}>{label}</option>
+          ))}
+        </select>
       </div>
       <div style={{ display: 'flex', gap: 4, padding: '4px 10px 0' }}>
         {RESOURCE_FILTERS.map(({ id, label }) => (
@@ -276,8 +294,10 @@ export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
             <div style={S.asteroidScore}>
               {sortMode === 'delta_v'
                 ? `Δv ${a.delta_v_kms.toFixed(2)} km/s`
-                : sortMode === 'name'
-                ? `score ${a.prospecting_score.toFixed(3)}`
+                : sortMode === 'window'
+                ? (a.launch_window?.window_label ?? '—')
+                : sortMode === 'value'
+                ? (a.mission_roi?.resource_value_label ?? '—')
                 : `score ${a.prospecting_score.toFixed(3)}`}
             </div>
           </HoverRow>
