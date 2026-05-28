@@ -72,6 +72,15 @@ const asteroid: AsteroidOrbit = {
     pgm_mass_kg: 1e8,
     why_go_here: 'Rich in metals.',
   },
+  launch_window: {
+    days_until_window: 312.0,
+    transit_days: 259.0,
+    synodic_period_days: 780.0,
+    launch_date: '2026-04-02',
+    arrival_date: '2026-12-17',
+    window_label: 'Opens in 10m',
+    repeat_label: 'Windows repeat every 2.1 years',
+  },
 }
 
 const baseProps = {
