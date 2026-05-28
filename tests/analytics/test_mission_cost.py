@@ -17,6 +17,7 @@ _SAMPLE_RETURN_COST = 2_000_000_000
 
 # ── structure ──────────────────────────────────────────────────────────────────
 
+
 def test_cost_tiers_returns_all_three_tiers():
     result = compute_cost_tiers(1_000_000_000)
     assert "flyby" in result
@@ -42,6 +43,7 @@ def test_cost_tier_costs_are_correct():
 
 # ── roi ratio arithmetic ───────────────────────────────────────────────────────
 
+
 def test_roi_ratio_flyby():
     result = compute_cost_tiers(600_000_000)
     assert result["flyby"]["roi_ratio"] == pytest.approx(2.0)
@@ -66,6 +68,7 @@ def test_roi_ratio_zero_value():
 
 # ── roi labels ─────────────────────────────────────────────────────────────────
 
+
 def test_roi_label_above_one_shows_x_return():
     result = compute_cost_tiers(600_000_000)
     assert result["flyby"]["roi_label"] == "2.0x return"
@@ -83,6 +86,7 @@ def test_roi_label_exactly_one():
 
 # ── cost labels ────────────────────────────────────────────────────────────────
 
+
 def test_cost_labels_are_human_readable():
     result = compute_cost_tiers(1_000_000_000)
     assert result["flyby"]["cost_label"] == "$300.0M"
@@ -91,6 +95,7 @@ def test_cost_labels_are_human_readable():
 
 
 # ── recommended tier ──────────────────────────────────────────────────────────
+
 
 def test_recommended_returns_key():
     result = compute_cost_tiers(1_000_000_000)
