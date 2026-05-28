@@ -8,7 +8,6 @@ import pytest
 
 from asteroid_atlas.analytics.mission_roi import compute_cost_tiers
 
-
 # ── constants ──────────────────────────────────────────────────────────────────
 
 _FLYBY_COST = 300_000_000
