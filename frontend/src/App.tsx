@@ -101,7 +101,9 @@ export default function App() {
             <span data-testid="selected-orbit-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
             <AsteroidInfoPanel
               asteroid={selected}
+              allAsteroids={asteroids}
               onClose={() => setSelected(null)}
+              onSelectCompanion={(a) => { setSelected(a); viewerRef.current?.flyTo({ kind: 'asteroid', asteroid: a }) }}
             />
           </>
         )}
