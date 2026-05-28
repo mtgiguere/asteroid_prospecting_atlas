@@ -1,10 +1,13 @@
 import type { AsteroidOrbit, CostTiers } from '../types'
+import { suggestCompanions } from '../utils/missionCompanions'
 import { ResourceCard } from './ResourceCard'
 import styles from './AsteroidInfoPanel.module.css'
 
 interface Props {
   asteroid: AsteroidOrbit
+  allAsteroids: AsteroidOrbit[]
   onClose: () => void
+  onSelectCompanion: (asteroid: AsteroidOrbit) => void
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -46,8 +49,9 @@ function CostTiersTable({ tiers }: { tiers: CostTiers }) {
   )
 }
 
-export function AsteroidInfoPanel({ asteroid, onClose }: Props) {
+export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose, onSelectCompanion }: Props) {
   const roi = asteroid.mission_roi
+  const companions = suggestCompanions(asteroid, allAsteroids, 2)
 
   return (
     <div className={styles.panel}>
@@ -115,6 +119,33 @@ export function AsteroidInfoPanel({ asteroid, onClose }: Props) {
         <Row label="Transit" value={`${Math.round(asteroid.launch_window.transit_days)} days`} />
         <div className={styles.windowRepeat}>{asteroid.launch_window.repeat_label}</div>
       </div>
+
+      {companions.length > 0 && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>MISSION PARTNERS</div>
+          <div className={styles.companionNote}>
+            Nearby targets worth chaining into the same mission
+          </div>
+          {companions.map((c) => (
+            <button
+              key={c.asteroid.nasa_jpl_id}
+              className={styles.companionCard}
+              onClick={() => onSelectCompanion(c.asteroid)}
+            >
+              <div className={styles.companionName}>{c.asteroid.name}</div>
+              <div className={styles.companionMeta}>
+                <span className={styles.companionType}>
+                  {c.asteroid.resource_profile?.type_group ?? '?'}-type
+                </span>
+                <span className={styles.companionDv}>
+                  +{c.additional_dv_kms.toFixed(1)} km/s
+                </span>
+              </div>
+              <div className={styles.companionRationale}>{c.rationale}</div>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.legend}>
         <div className={styles.legendTitle}>SCORE LEGEND</div>
