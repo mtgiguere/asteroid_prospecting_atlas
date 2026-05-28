@@ -36,6 +36,15 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
     pgm_mass_kg: 1e10,
     why_go_here: 'Iron and nickel for orbital construction.',
   },
+  launch_window: {
+    days_until_window: 312.0,
+    transit_days: 259.0,
+    synodic_period_days: 780.0,
+    launch_date: '2026-04-02',
+    arrival_date: '2026-12-17',
+    window_label: 'Opens in 10m',
+    repeat_label: 'Windows repeat every 2.1 years',
+  },
   ...overrides,
 })
 
