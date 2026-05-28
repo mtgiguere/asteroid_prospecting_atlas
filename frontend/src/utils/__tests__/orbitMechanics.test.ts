@@ -4,6 +4,7 @@ import {
   positionAtMjd,
   mjdToDateString,
   dateToMjd,
+  earthRotationRad,
   type OrbitalElements,
 } from '../orbitMechanics'
 
@@ -111,5 +112,28 @@ describe('mjdToDateString', () => {
 describe('dateToMjd', () => {
   it('converts 2000-01-01 to MJD 51544.0', () => {
     expect(dateToMjd(new Date('2000-01-01T00:00:00Z'))).toBeCloseTo(51544.0, 5)
+  })
+})
+
+describe('earthRotationRad', () => {
+  it('returns 0 at MJD 0', () => {
+    expect(earthRotationRad(0)).toBeCloseTo(0, 10)
+  })
+
+  it('returns π/2 after a quarter day', () => {
+    expect(earthRotationRad(0.25)).toBeCloseTo(Math.PI / 2, 5)
+  })
+
+  it('returns π after half a day', () => {
+    expect(earthRotationRad(0.5)).toBeCloseTo(Math.PI, 5)
+  })
+
+  it('completes a full rotation after one day', () => {
+    expect(earthRotationRad(1) % (2 * Math.PI)).toBeCloseTo(0, 5)
+  })
+
+  it('produces a consistent angle for any MJD', () => {
+    const angle = earthRotationRad(51544.0)
+    expect(Number.isFinite(angle)).toBe(true)
   })
 })

@@ -94,10 +94,40 @@
   border-color: var(--accent);
 }
 
+.rendererToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.toggleBtn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.toggleBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.toggleActive {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(0, 212, 255, 0.1);
+}
+
 .status {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-dim);
   white-space: nowrap;
-  margin-left: auto;
 }

@@ -23,7 +23,8 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
   perihelion_au: 1.133,
   aphelion_au: 1.783,
   earth_orbit_crossing: false,
-  accessibility_score: 1.2,
+  delta_v_kms: 4.8,
+  accessibility_score: 4.8,
   prospecting_score: 0.8,
   resource_profile: {
     type_group: 'S',
@@ -34,6 +35,15 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
     metal_mass_kg: 2.5e14,
     pgm_mass_kg: 1e10,
     why_go_here: 'Iron and nickel for orbital construction.',
+  },
+  launch_window: {
+    days_until_window: 312.0,
+    transit_days: 259.0,
+    synodic_period_days: 780.0,
+    launch_date: '2026-04-02',
+    arrival_date: '2026-12-17',
+    window_label: 'Opens in 10m',
+    repeat_label: 'Windows repeat every 2.1 years',
   },
   ...overrides,
 })

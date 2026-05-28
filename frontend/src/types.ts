@@ -1,3 +1,13 @@
+export interface LaunchWindow {
+  days_until_window: number
+  transit_days: number
+  synodic_period_days: number
+  launch_date: string
+  arrival_date: string
+  window_label: string
+  repeat_label: string
+}
+
 export interface ResourceProfile {
   type_group: string
   type_label: string
@@ -28,9 +38,11 @@ export interface AsteroidOrbit {
   perihelion_au: number
   aphelion_au: number
   earth_orbit_crossing: boolean
+  delta_v_kms: number
   accessibility_score: number
   prospecting_score: number
   resource_profile: ResourceProfile
+  launch_window: LaunchWindow
 }
 
 export type ColorMode = 'spectral_type' | 'prospecting_score' | 'accessibility_score'
@@ -39,3 +51,5 @@ export type FlyTarget =
   | { kind: 'sol' }
   | { kind: 'planet'; planetId: string }
   | { kind: 'asteroid'; asteroid: AsteroidOrbit }
+
+export type RendererMode = 'cesium' | 'spacekit'

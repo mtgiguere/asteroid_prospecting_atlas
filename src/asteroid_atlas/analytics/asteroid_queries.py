@@ -5,6 +5,7 @@ Read/query helpers for asteroid analytics.
 """
 
 from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
+from asteroid_atlas.analytics.launch_window import compute_launch_window
 from asteroid_atlas.analytics.orbital_classification import is_earth_orbit_crossing
 from asteroid_atlas.analytics.orbital_metrics import calculate_perihelion_aphelion
 from asteroid_atlas.analytics.prospecting import calculate_prospecting_score
@@ -98,6 +99,7 @@ def list_asteroids_for_visualization(
     limit: int = 200,
     earth_crossing_only: bool = False,
     nasa_jpl_ids: list[str] | None = None,
+    current_mjd: float = 51544.0,
 ) -> list[dict]:
     """
     Full orbital elements + computed scores for 3D visualization.
@@ -139,6 +141,7 @@ def list_asteroids_for_visualization(
                 "perihelion_au": round(perihelion, 6),
                 "aphelion_au": round(aphelion, 6),
                 "earth_orbit_crossing": earth_crossing,
+                "delta_v_kms": round(accessibility_score, 2),
                 "accessibility_score": round(accessibility_score, 4),
                 "prospecting_score": round(prospecting_score, 4),
             }
@@ -162,6 +165,17 @@ def list_asteroids_for_visualization(
             "pgm_mass_kg": rp.pgm_mass_kg,
             "why_go_here": rp.why_go_here,
         }
+
+        row["launch_window"] = compute_launch_window(
+            a=row["semi_major_axis_au"],
+            e=row["eccentricity"],
+            i_deg=row["inclination_deg"],
+            epoch_mjd=row["epoch_mjd"],
+            current_mjd=current_mjd,
+            om_deg=row.get("longitude_of_ascending_node_deg", 0.0),
+            w_deg=row.get("argument_of_periapsis_deg", 0.0),
+            ma_epoch_deg=row.get("mean_anomaly_deg", 0.0),
+        )
 
     return top
 
