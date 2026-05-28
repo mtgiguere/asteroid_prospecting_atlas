@@ -26,8 +26,8 @@ import {
 } from 'cesium'
 import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
-import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
-import { positionAtMjd, earthRotationRad } from '../utils/orbitMechanics'
+import { orbitToCartesian3, eclipticCircle, hohmannTransferPoints, AU_M } from '../utils/orbitGeometry'
+import { positionAtMjd, earthRotationRad, planetAngleDeg } from '../utils/orbitMechanics'
 import { useOrbitAnimation } from '../hooks/useOrbitAnimation'
 import { scoreToHex } from '../utils/colorScale'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
@@ -49,7 +49,7 @@ interface Props {
 export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
   function SolarSystemViewer({ asteroids, selectedId, hoveredId, colorMode, currentMjd, onSelect, onHover }, ref) {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
-    const { displayId, revealProgress, fadeAlpha } = useOrbitAnimation(selectedId)
+    const { displayId, fadeAlpha } = useOrbitAnimation(selectedId)
     const currentMjdRef = useRef(currentMjd)
     useEffect(() => { currentMjdRef.current = currentMjd }, [currentMjd])
 
@@ -114,9 +114,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       scene.logarithmicDepthBuffer = true
       viewer.cesiumWidget.creditContainer.setAttribute('style', 'display:none')
 
+      // Explicit direction toward the Sun at the origin avoids heading/pitch ambiguity
+      const camPos = new Cartesian3(0, -4.5e11, 2.8e11)
+      const camDir = Cartesian3.normalize(
+        Cartesian3.subtract(Cartesian3.ZERO, camPos, new Cartesian3()),
+        new Cartesian3(),
+      )
       viewer.camera.setView({
-        destination: new Cartesian3(0, -4.5e11, 2.8e11),
-        orientation: { heading: 0, pitch: -0.52, roll: 0 },
+        destination: camPos,
+        orientation: { direction: camDir, up: new Cartesian3(0, 0, 1) },
       })
 
       const controller = viewer.scene.screenSpaceCameraController
@@ -159,26 +165,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(planetLines)
 
-      // Planet points + name labels
-      const planetPoints = new PointPrimitiveCollection()
-      const planetLabels = new LabelCollection()
-      PLANETS.forEach((p) => {
-        const rad = (p.angleDeg * Math.PI) / 180
-        const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
-        planetLabels.add({
-          position: pos,
-          text: p.name,
-          font: '12px monospace',
-          fillColor: Color.fromCssColorString(p.color),
-          outlineColor: Color.BLACK,
-          outlineWidth: 3,
-          style: LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cartesian2(p.pointSize / 2 + 6, 0),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        })
-      })
-      scene.primitives.add(planetPoints)
-      scene.primitives.add(planetLabels)
+      // Planet labels and glows are in a separate effect that tracks currentMjd
 
       // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
       const beltLines = new PolylineCollection()
@@ -203,23 +190,34 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           scene.primitives.remove(sunPoints)
           scene.primitives.remove(sunLabel)
           scene.primitives.remove(planetLines)
-          scene.primitives.remove(planetPoints)
-          scene.primitives.remove(planetLabels)
           scene.primitives.remove(beltLines)
         }
       }
     }, [viewer])
 
-    // All planets — multi-layer glows; picking ID on core layer
+    // All planets — multi-layer glows + labels; re-runs when time advances so planets move
     useEffect(() => {
       if (!viewer) return
 
       const scene = viewer.scene
       const allPlanetPoints = new PointPrimitiveCollection()
+      const planetLabels = new LabelCollection()
 
       PLANETS.forEach((p) => {
-        const rad = (p.angleDeg * Math.PI) / 180
+        const deg = planetAngleDeg(p.angleDeg, p.periodDays, currentMjd)
+        const rad = (deg * Math.PI) / 180
         const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
+        planetLabels.add({
+          position: pos,
+          text: p.name,
+          font: '12px monospace',
+          fillColor: Color.fromCssColorString(p.color),
+          outlineColor: Color.BLACK,
+          outlineWidth: 3,
+          style: LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cartesian2(p.pointSize / 2 + 6, 0),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        })
 
         if (p.id === 'mercury') {
           allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#aaaaaa').withAlpha(0.12), pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
@@ -250,21 +248,24 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
 
       scene.primitives.add(allPlanetPoints)
+      scene.primitives.add(planetLabels)
 
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(allPlanetPoints)
+          scene.primitives.remove(planetLabels)
         }
       }
-    }, [viewer])
+    }, [viewer, currentMjd])
 
-    // Earth — rotating sphere with atmosphere glow (Primitive API, same pipeline as rest of scene)
+    // Earth — rotating sphere with atmosphere glow; position tracked from currentMjd
     useEffect(() => {
       if (!viewer) return
       const scene = viewer.scene
 
       const earth = PLANETS.find((p) => p.id === 'earth')!
-      const rad = (earth.angleDeg * Math.PI) / 180
+      const deg = planetAngleDeg(earth.angleDeg, earth.periodDays, currentMjd)
+      const rad = (deg * Math.PI) / 180
       const earthPos = new Cartesian3(
         Math.cos(rad) * earth.sma * AU_M,
         Math.sin(rad) * earth.sma * AU_M,
@@ -344,7 +345,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           scene.primitives.remove(pickPoints)
         }
       }
-    }, [viewer])
+    }, [viewer, currentMjd])
 
     // Asteroid points — re-runs when data, date, or colors change
     useEffect(() => {
@@ -398,7 +399,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       }
     }, [viewer, asteroids, displayId, hoveredId, colorMode, currentMjd])
 
-    // Selected orbit arc — animated sweep in, fade out; cheap enough to re-run each RAF tick
+    // Selected orbit — full path, persistent while selected, fades on deselect
     useEffect(() => {
       if (!viewer || !displayId) return
 
@@ -412,20 +413,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           : scoreToHex(asteroid[colorMode], 0, 1)
       const color = Color.fromCssColorString(hex)
 
-      const allPositions = orbitToCartesian3(
-        asteroid.semi_major_axis_au,
-        asteroid.eccentricity,
-        asteroid.inclination_deg,
-        asteroid.longitude_of_ascending_node_deg,
-        asteroid.argument_of_periapsis_deg,
-      )
-
-      const visibleCount = Math.max(2, Math.ceil(revealProgress * allPositions.length))
-      const positions = allPositions.slice(0, visibleCount)
-
       const orbitLines = new PolylineCollection()
       orbitLines.add({
-        positions,
+        positions: orbitToCartesian3(
+          asteroid.semi_major_axis_au,
+          asteroid.eccentricity,
+          asteroid.inclination_deg,
+          asteroid.longitude_of_ascending_node_deg,
+          asteroid.argument_of_periapsis_deg,
+        ),
         width: 3,
         material: Material.fromType(Material.ColorType, {
           color: color.withAlpha(fadeAlpha),
@@ -437,7 +433,34 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       return () => {
         if (!viewer.isDestroyed()) scene.primitives.remove(orbitLines)
       }
-    }, [viewer, asteroids, displayId, revealProgress, fadeAlpha, colorMode])
+    }, [viewer, asteroids, displayId, fadeAlpha, colorMode])
+
+    // Hohmann transfer arc — orange semi-ellipse from Earth's current position to selected asteroid
+    useEffect(() => {
+      if (!viewer || !displayId) return
+
+      const asteroid = asteroids.find((a) => a.nasa_jpl_id === displayId)
+      if (!asteroid) return
+
+      const scene = viewer.scene
+      const earth = PLANETS.find((p) => p.id === 'earth')!
+      const earthLonDeg = planetAngleDeg(earth.angleDeg, earth.periodDays, currentMjd)
+
+      const hohmannLines = new PolylineCollection()
+      hohmannLines.add({
+        positions: hohmannTransferPoints(earthLonDeg, asteroid.semi_major_axis_au),
+        width: 2,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#ff8833').withAlpha(fadeAlpha * 0.75),
+        }),
+      })
+
+      scene.primitives.add(hohmannLines)
+
+      return () => {
+        if (!viewer.isDestroyed()) scene.primitives.remove(hohmannLines)
+      }
+    }, [viewer, asteroids, displayId, fadeAlpha, currentMjd])
 
     // Click picking — select asteroid or planet, then flyTo
     useEffect(() => {

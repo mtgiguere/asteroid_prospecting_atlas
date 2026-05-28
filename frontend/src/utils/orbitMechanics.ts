@@ -77,3 +77,9 @@ export function todayMjd(): number {
 export function earthRotationRad(mjd: number): number {
   return (mjd * 2 * Math.PI) % (2 * Math.PI)
 }
+
+const J2000_MJD = 51544.5
+
+export function planetAngleDeg(lonJ2000Deg: number, periodDays: number, mjd: number): number {
+  return ((lonJ2000Deg + (mjd - J2000_MJD) * 360 / periodDays) % 360 + 360) % 360
+}
