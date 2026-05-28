@@ -310,7 +310,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       handler.setInputAction(
         (event: { position: { x: number; y: number } }) => {
-          const picked = viewer.scene.pick(event.position)
+          const picked = viewer.scene.pick(event.position as unknown as Cartesian2)
           if (!defined(picked)) {
             onSelect(null)
             return
@@ -339,7 +339,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       handler.setInputAction(
         (event: { endPosition: { x: number; y: number } }) => {
-          const picked = viewer.scene.pick(event.endPosition)
+          const picked = viewer.scene.pick(event.endPosition as unknown as Cartesian2)
           if (defined(picked) && typeof picked.id === 'string' && !picked.id.startsWith('planet:')) {
             onHover(picked.id)
           } else {
