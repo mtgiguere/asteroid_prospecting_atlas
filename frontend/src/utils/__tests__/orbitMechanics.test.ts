@@ -5,6 +5,7 @@ import {
   mjdToDateString,
   dateToMjd,
   earthRotationRad,
+  planetAngleDeg,
   type OrbitalElements,
 } from '../orbitMechanics'
 
@@ -135,5 +136,43 @@ describe('earthRotationRad', () => {
   it('produces a consistent angle for any MJD', () => {
     const angle = earthRotationRad(51544.0)
     expect(Number.isFinite(angle)).toBe(true)
+  })
+})
+
+describe('planetAngleDeg', () => {
+  const J2000 = 51544.5
+
+  it('returns lonJ2000Deg unchanged at the J2000 epoch', () => {
+    expect(planetAngleDeg(100.46, 365.25, J2000)).toBeCloseTo(100.46, 5)
+  })
+
+  it('advances by 360/period degrees per day', () => {
+    const result = planetAngleDeg(0, 365.25, J2000 + 1)
+    expect(result).toBeCloseTo(360 / 365.25, 4)
+  })
+
+  it('returns the same angle after exactly one orbital period', () => {
+    const period = 365.25
+    const result = planetAngleDeg(100.46, period, J2000 + period)
+    expect(result).toBeCloseTo(100.46, 3)
+  })
+
+  it('always returns a value in [0, 360)', () => {
+    // Starting angle close to 360 that will wrap past 360 after 100 days
+    const result = planetAngleDeg(350, 365.25, J2000 + 100)
+    expect(result).toBeGreaterThanOrEqual(0)
+    expect(result).toBeLessThan(360)
+  })
+
+  it('works for short-period planets (Mercury)', () => {
+    // Mercury period ~88 days — two full orbits
+    const result = planetAngleDeg(252.25, 87.969, J2000 + 2 * 87.969)
+    expect(result).toBeCloseTo(252.25, 2)
+  })
+
+  it('works for long-period planets (Jupiter)', () => {
+    const result = planetAngleDeg(34.40, 4332.59, J2000 + 1000)
+    const expected = (34.40 + 1000 * 360 / 4332.59) % 360
+    expect(result).toBeCloseTo(expected, 4)
   })
 })

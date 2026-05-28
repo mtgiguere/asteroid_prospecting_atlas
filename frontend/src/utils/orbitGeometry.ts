@@ -45,6 +45,30 @@ export function orbitToCartesian3(
   return positions
 }
 
+export function hohmannTransferPoints(
+  earthLonDeg: number,
+  asteroidSmaAu: number,
+  numPoints = 60,
+): Cartesian3[] {
+  const a_t = (1 + asteroidSmaAu) / 2
+  const e_t = (asteroidSmaAu - 1) / (asteroidSmaAu + 1)
+  const omega = (earthLonDeg * Math.PI) / 180
+
+  const positions: Cartesian3[] = []
+  for (let i = 0; i <= numPoints; i++) {
+    const nu = (Math.PI * i) / numPoints
+    const r = (a_t * (1 - e_t * e_t)) / (1 + e_t * Math.cos(nu))
+    positions.push(
+      new Cartesian3(
+        r * Math.cos(nu + omega) * AU_M,
+        r * Math.sin(nu + omega) * AU_M,
+        0,
+      ),
+    )
+  }
+  return positions
+}
+
 export function eclipticCircle(radiusAu: number, numPoints = 180): Cartesian3[] {
   const positions: Cartesian3[] = []
   for (let step = 0; step <= numPoints; step++) {
