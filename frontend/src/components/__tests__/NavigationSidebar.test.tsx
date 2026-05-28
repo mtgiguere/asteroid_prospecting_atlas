@@ -33,6 +33,12 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
     reach_summary: '~67% of launch mass must be propellant',
     mission_grade: 'STRONG',
     summary: 'High-value iron, nickel, and silicates, within practical mission range.',
+    cost_tiers: {
+      flyby:         { cost_usd: 300_000_000,   cost_label: '$300.0M', roi_ratio: 8333.3, roi_label: '8333.3x return' },
+      rendezvous:    { cost_usd: 800_000_000,   cost_label: '$800.0M', roi_ratio: 3125.0, roi_label: '3125.0x return' },
+      sample_return: { cost_usd: 2_000_000_000, cost_label: '$2.0B',   roi_ratio: 1250.0, roi_label: '1250.0x return' },
+      recommended: 'sample_return',
+    },
   },
   resource_profile: {
     type_group: 'S',

@@ -8,6 +8,20 @@ export interface LaunchWindow {
   repeat_label: string
 }
 
+export interface CostTier {
+  cost_usd: number
+  cost_label: string
+  roi_ratio: number
+  roi_label: string
+}
+
+export interface CostTiers {
+  flyby: CostTier
+  rendezvous: CostTier
+  sample_return: CostTier
+  recommended: 'flyby' | 'rendezvous' | 'sample_return' | 'survey_only'
+}
+
 export interface MissionRoi {
   resource_value_usd: number
   resource_value_label: string
@@ -15,6 +29,7 @@ export interface MissionRoi {
   reach_summary: string
   mission_grade: string
   summary: string
+  cost_tiers: CostTiers
 }
 
 export interface ResourceProfile {

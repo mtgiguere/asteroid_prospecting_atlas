@@ -7,6 +7,7 @@ Read/query helpers for asteroid analytics.
 from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
 from asteroid_atlas.analytics.launch_window import compute_launch_window
 from asteroid_atlas.analytics.mission_roi import (
+    compute_cost_tiers,
     compute_resource_value_usd,
     compute_roi_score,
     format_value_usd,
@@ -198,6 +199,7 @@ def list_asteroids_for_visualization(
             "reach_summary": reach_summary(dv),
             "mission_grade": grade,
             "summary": mission_summary(rp_group, grade, reach),
+            "cost_tiers": compute_cost_tiers(row["_resource_value_usd"]),
         }
         del row["_resource_value_usd"]
         del row["_roi_score"]
