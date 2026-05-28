@@ -9,9 +9,14 @@ from sqlalchemy.orm import sessionmaker
 
 
 def _normalise_db_url(url: str) -> str:
-    # Railway (and most hosts) provide postgresql:// but psycopg3 needs postgresql+psycopg://
+    # Rewrite any postgres dialect to the psycopg3 driver installed in this project.
+    # Handles: postgresql://, postgres://, postgresql+psycopg2://
+    if url.startswith("postgresql+psycopg2://"):
+        return url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
     if url.startswith("postgresql://"):
         return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
     return url
 
 
