@@ -3,6 +3,21 @@ import { PLANETS } from '../constants/solarSystem'
 import type { AsteroidOrbit, FlyTarget } from '../types'
 
 type ResourceFilter = 'all' | 'water' | 'metals' | 'pgms'
+type SortMode = 'score' | 'delta_v' | 'name'
+
+const SORT_MODES: { id: SortMode; label: string }[] = [
+  { id: 'score',   label: 'Score'   },
+  { id: 'delta_v', label: 'Delta-v' },
+  { id: 'name',    label: 'Name'    },
+]
+
+function sortAsteroids(asteroids: AsteroidOrbit[], mode: SortMode): AsteroidOrbit[] {
+  const sorted = [...asteroids]
+  if (mode === 'score')   sorted.sort((a, b) => a.prospecting_score - b.prospecting_score)
+  if (mode === 'delta_v') sorted.sort((a, b) => a.delta_v_kms - b.delta_v_kms)
+  if (mode === 'name')    sorted.sort((a, b) => a.name.localeCompare(b.name))
+  return sorted
+}
 
 const RESOURCE_FILTERS: { id: ResourceFilter; label: string }[] = [
   { id: 'all',    label: 'All'    },
@@ -153,14 +168,16 @@ function HoverRow({
 export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
   const [query, setQuery] = useState('')
   const [resourceFilter, setResourceFilter] = useState<ResourceFilter>('all')
+  const [sortMode, setSortMode] = useState<SortMode>('score')
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return asteroids.filter((a) =>
+    const base = asteroids.filter((a) =>
       matchesResourceFilter(a, resourceFilter) &&
       (q === '' || a.name.toLowerCase().includes(q))
     )
-  }, [asteroids, query, resourceFilter])
+    return sortAsteroids(base, sortMode)
+  }, [asteroids, query, resourceFilter, sortMode])
 
   return (
     <div style={S.sidebar}>
@@ -190,6 +207,29 @@ export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
       {/* Asteroids */}
       <div style={S.sectionLabel}>Asteroids</div>
       <div style={S.count}>{filtered.length} bodies</div>
+      <div style={{ display: 'flex', gap: 4, padding: '4px 10px 0' }}>
+        {SORT_MODES.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setSortMode(id)}
+            aria-pressed={sortMode === id}
+            style={{
+              flex: 1,
+              background: sortMode === id ? 'rgba(80,140,255,0.2)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${sortMode === id ? 'rgba(80,140,255,0.5)' : 'rgba(80,120,200,0.2)'}`,
+              borderRadius: 3,
+              color: sortMode === id ? '#a8c0e8' : '#4a6a9f',
+              fontSize: 9,
+              letterSpacing: '0.06em',
+              padding: '3px 0',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono, monospace)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div style={{ display: 'flex', gap: 4, padding: '4px 10px 0' }}>
         {RESOURCE_FILTERS.map(({ id, label }) => (
           <button
@@ -233,7 +273,13 @@ export function NavigationSidebar({ asteroids, onFlyTo, onHover }: Props) {
             data-testid="asteroid-list-item"
           >
             <div style={S.asteroidName}>{a.name}</div>
-            <div style={S.asteroidScore}>score {a.prospecting_score.toFixed(3)}</div>
+            <div style={S.asteroidScore}>
+              {sortMode === 'delta_v'
+                ? `Δv ${a.delta_v_kms.toFixed(2)} km/s`
+                : sortMode === 'name'
+                ? `score ${a.prospecting_score.toFixed(3)}`
+                : `score ${a.prospecting_score.toFixed(3)}`}
+            </div>
           </HoverRow>
         ))}
       </div>
