@@ -221,4 +221,88 @@ describe('NavigationSidebar', () => {
       expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
     })
   })
+
+  describe('sort', () => {
+    // LOW_DV: easiest to reach, worst prospecting score, name sorts last
+    const LOW_DV = makeAsteroid({
+      asteroid_id: 10,
+      name: 'Zeta Rock',
+      nasa_jpl_id: '1000001',
+      delta_v_kms: 2.1,
+      accessibility_score: 2.1,
+      prospecting_score: 0.9,
+    })
+    // HIGH_DV: hardest to reach, best prospecting score, name sorts first
+    const HIGH_DV = makeAsteroid({
+      asteroid_id: 11,
+      name: 'Alpha Stone',
+      nasa_jpl_id: '1000002',
+      delta_v_kms: 8.5,
+      accessibility_score: 8.5,
+      prospecting_score: 0.2,
+    })
+    const pair = [LOW_DV, HIGH_DV]
+
+    function asteroidNames() {
+      return screen.getAllByTestId('asteroid-list-item').map((el) => el.textContent ?? '')
+    }
+
+    it('renders Score, Delta-v, and Name sort buttons', () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      expect(screen.getByRole('button', { name: /score/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /delta-v/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /name/i })).toBeInTheDocument()
+    })
+
+    it('default sort is by prospecting score ascending — best score first', () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Alpha Stone/)
+      expect(names[1]).toMatch(/Zeta Rock/)
+    })
+
+    it('Delta-v sort puts lowest delta-v first', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Zeta Rock/)
+      expect(names[1]).toMatch(/Alpha Stone/)
+    })
+
+    it('Name sort puts asteroids in alphabetical order', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /name/i }))
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Alpha Stone/)
+      expect(names[1]).toMatch(/Zeta Rock/)
+    })
+
+    it('active sort button has aria-pressed true', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      expect(screen.getByRole('button', { name: /score/i })).toHaveAttribute('aria-pressed', 'true')
+      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
+      expect(screen.getByRole('button', { name: /delta-v/i })).toHaveAttribute('aria-pressed', 'true')
+      expect(screen.getByRole('button', { name: /score/i })).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('sort and resource filter apply together', async () => {
+      const metalA = makeAsteroid({ asteroid_id: 20, name: 'Iron Alpha', nasa_jpl_id: '2000020', delta_v_kms: 5.0, prospecting_score: 0.5 })
+      const metalB = makeAsteroid({ asteroid_id: 21, name: 'Iron Zeta',  nasa_jpl_id: '2000021', delta_v_kms: 3.0, prospecting_score: 0.7 })
+      render(<NavigationSidebar asteroids={[metalA, metalB, C_TYPE]} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /metals/i }))
+      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
+      expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Iron Zeta/)
+      expect(names[1]).toMatch(/Iron Alpha/)
+    })
+
+    it('sort resets correctly when switching back to Score', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /delta-v/i }))
+      await userEvent.click(screen.getByRole('button', { name: /score/i }))
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Alpha Stone/)
+    })
+  })
 })
