@@ -1,5 +1,5 @@
-import type { AsteroidOrbit } from '../types'
-import { scoreToHex } from '../utils/colorScale'
+import type { AsteroidOrbit, CostTiers } from '../types'
+import { suggestCompanions } from '../utils/missionCompanions'
 import { ResourceCard } from './ResourceCard'
 import styles from './AsteroidInfoPanel.module.css'
 
@@ -7,19 +7,8 @@ interface Props {
   asteroid: AsteroidOrbit
   allAsteroids: AsteroidOrbit[]
   onClose: () => void
-}
-
-function ScoreBar({ score, min, max }: { score: number; min: number; max: number }) {
-  const pct = max === min ? 0 : ((score - min) / (max - min)) * 100
-  const color = scoreToHex(score, min, max)
-  return (
-    <div className={styles.scoreBarWrap}>
-      <div className={styles.scoreBarTrack}>
-        <div className={styles.scoreBarFill} style={{ width: `${pct}%`, background: color }} />
-      </div>
-      <span className={styles.scoreValue} style={{ color }}>{score.toFixed(3)}</span>
-    </div>
-  )
+  onSelectCompanion: (asteroid: AsteroidOrbit) => void
+  onCompare?: () => void
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -31,9 +20,39 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
-  const allProspecting = allAsteroids.map((a) => a.prospecting_score)
-  const allAccess = allAsteroids.map((a) => a.accessibility_score)
+const TIER_LABELS: Record<string, string> = {
+  flyby: 'Flyby',
+  rendezvous: 'Rendezvous',
+  sample_return: 'Sample Return',
+}
+
+function CostTiersTable({ tiers }: { tiers: CostTiers }) {
+  const tierKeys = ['flyby', 'rendezvous', 'sample_return'] as const
+  return (
+    <div className={styles.costTable}>
+      {tierKeys.map((key) => {
+        const t = tiers[key]
+        const isRec = tiers.recommended === key
+        return (
+          <div key={key} className={styles.costRow} data-recommended={isRec || undefined}>
+            <span className={styles.costTierName}>
+              {TIER_LABELS[key]}
+              {isRec && <span className={styles.recBadge}>REC</span>}
+            </span>
+            <span className={styles.costAmount}>{t.cost_label}</span>
+            <span className={styles.costRoi} data-positive={t.roi_ratio >= 1 || undefined}>
+              {t.roi_label}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose, onSelectCompanion, onCompare }: Props) {
+  const roi = asteroid.mission_roi
+  const companions = suggestCompanions(asteroid, allAsteroids, 2)
 
   return (
     <div className={styles.panel}>
@@ -42,7 +61,14 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
           <div className={styles.name}>{asteroid.name}</div>
           <div className={styles.jplId}>JPL {asteroid.nasa_jpl_id}</div>
         </div>
-        <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {onCompare && (
+            <button className={styles.closeBtn} onClick={onCompare} aria-label="Compare" style={{ fontSize: 10, letterSpacing: '0.1em', padding: '3px 8px', border: '1px solid rgba(0,212,255,0.3)', borderRadius: 3 }}>
+              COMPARE
+            </button>
+          )}
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        </div>
       </div>
 
       {asteroid.earth_orbit_crossing && (
@@ -50,23 +76,21 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
       )}
 
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>SCORES</div>
-        <div className={styles.scoreLine}>
-          <span className={styles.scoreLabel}>PROSPECTING</span>
-          <ScoreBar
-            score={asteroid.prospecting_score}
-            min={Math.min(...allProspecting)}
-            max={Math.max(...allProspecting)}
-          />
+        <div className={styles.sectionTitle}>MISSION ANALYSIS</div>
+
+        <div className={styles.roiValue}>{roi.resource_value_label}</div>
+        <div className={styles.roiGrade} data-grade={roi.mission_grade}>{roi.mission_grade}</div>
+
+        <div className={styles.roiReach}>
+          <span className={styles.roiReachLabel}>REACH</span>
+          <span className={styles.roiReachValue}>{roi.reach_rating}</span>
         </div>
-        <div className={styles.scoreLine}>
-          <span className={styles.scoreLabel}>ACCESSIBILITY</span>
-          <ScoreBar
-            score={asteroid.accessibility_score}
-            min={Math.min(...allAccess)}
-            max={Math.max(...allAccess)}
-          />
-        </div>
+        <div className={styles.roiFuelNote}>{roi.reach_summary}</div>
+
+        <div className={styles.roiSummary}>{roi.summary}</div>
+
+        <div className={styles.costSectionTitle}>MISSION COST MODEL</div>
+        <CostTiersTable tiers={roi.cost_tiers} />
       </div>
 
       <div className={styles.section}>
@@ -94,6 +118,42 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose }: Props) {
           value={asteroid.albedo != null ? asteroid.albedo.toFixed(3) : '—'}
         />
       </div>
+
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>NEXT LAUNCH WINDOW</div>
+        <div className={styles.windowLabel}>{asteroid.launch_window.window_label}</div>
+        <Row label="Launch" value={asteroid.launch_window.launch_date} />
+        <Row label="Arrival" value={asteroid.launch_window.arrival_date} />
+        <Row label="Transit" value={`${Math.round(asteroid.launch_window.transit_days)} days`} />
+        <div className={styles.windowRepeat}>{asteroid.launch_window.repeat_label}</div>
+      </div>
+
+      {companions.length > 0 && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>MISSION PARTNERS</div>
+          <div className={styles.companionNote}>
+            Nearby targets worth chaining into the same mission
+          </div>
+          {companions.map((c) => (
+            <button
+              key={c.asteroid.nasa_jpl_id}
+              className={styles.companionCard}
+              onClick={() => onSelectCompanion(c.asteroid)}
+            >
+              <div className={styles.companionName}>{c.asteroid.name}</div>
+              <div className={styles.companionMeta}>
+                <span className={styles.companionType}>
+                  {c.asteroid.resource_profile?.type_group ?? '?'}-type
+                </span>
+                <span className={styles.companionDv}>
+                  +{c.additional_dv_kms.toFixed(1)} km/s
+                </span>
+              </div>
+              <div className={styles.companionRationale}>{c.rationale}</div>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className={styles.legend}>
         <div className={styles.legendTitle}>SCORE LEGEND</div>

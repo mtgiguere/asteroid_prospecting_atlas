@@ -14,13 +14,21 @@ import {
   ScreenSpaceEventType,
   Material,
   BoundingSphere,
+  Quaternion,
+  Matrix3,
+  Matrix4,
+  EllipsoidGeometry,
+  GeometryInstance,
+  Primitive,
+  PerInstanceColorAppearance,
+  ColorGeometryInstanceAttribute,
   defined,
   type Viewer as CesiumViewer,
 } from 'cesium'
 import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
-import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
-import { positionAtMjd, planetAngleDeg } from '../utils/orbitMechanics'
+import { orbitToCartesian3, eclipticCircle, hohmannTransferPoints, AU_M } from '../utils/orbitGeometry'
+import { positionAtMjd, earthRotationRad, planetAngleDeg } from '../utils/orbitMechanics'
 import { useOrbitAnimation } from '../hooks/useOrbitAnimation'
 import { scoreToHex } from '../utils/colorScale'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
@@ -42,7 +50,7 @@ interface Props {
 export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
   function SolarSystemViewer({ asteroids, selectedId, hoveredId, colorMode, currentMjd, onSelect, onHover }, ref) {
     const [viewer, setViewer] = useState<CesiumViewer | null>(null)
-    const { displayId, revealProgress, fadeAlpha } = useOrbitAnimation(selectedId)
+    const { displayId, fadeAlpha } = useOrbitAnimation(selectedId)
     const currentMjdRef = useRef(currentMjd)
     useEffect(() => { currentMjdRef.current = currentMjd }, [currentMjd])
 
@@ -69,7 +77,17 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           let position: Cartesian3
           let radius: number
 
-          if (target.kind === 'planet') {
+          if (target.kind === 'sol') {
+            // Sit directly above the ecliptic so the Sun lands dead-centre.
+            // flyToBoundingSphere approaches from an angle; camera.flyTo with an
+            // explicit Z-axis destination avoids the off-axis drift.
+            viewer.camera.flyTo({
+              destination: new Cartesian3(0, 0, 2.8e11),
+              orientation: { direction: new Cartesian3(0, 0, -1), up: new Cartesian3(1, 0, 0) },
+              duration: 2.0,
+            })
+            return
+          } else if (target.kind === 'planet') {
             const planet = PLANETS.find((p) => p.id === target.planetId)
             if (!planet) return
             const deg = planetAngleDeg(planet.angleDeg, planet.periodDays, currentMjdRef.current)
@@ -114,16 +132,24 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       scene.logarithmicDepthBuffer = true
       viewer.cesiumWidget.creditContainer.setAttribute('style', 'display:none')
 
+      // Explicit direction toward the Sun at the origin avoids heading/pitch ambiguity
+      const camPos = new Cartesian3(0, -4.5e11, 2.8e11)
+      const camDir = Cartesian3.normalize(
+        Cartesian3.subtract(Cartesian3.ZERO, camPos, new Cartesian3()),
+        new Cartesian3(),
+      )
       viewer.camera.setView({
-        destination: new Cartesian3(0, -4.5e11, 2.8e11),
-        orientation: { heading: 0, pitch: -0.52, roll: 0 },
+        destination: camPos,
+        orientation: { direction: camDir, up: new Cartesian3(0, 0, 1) },
       })
 
       const controller = viewer.scene.screenSpaceCameraController
-      controller.zoomFactor = 2.0
-      controller.minimumZoomDistance = 1e8
+      controller.zoomFactor = 2.0          // default 5.0 — much too fast at AU scale
+      controller.minimumZoomDistance = 1e8 // ~0.001 AU — close enough to inspect a rock
 
-      // Sol — canvas radial gradient billboard bypasses WebGL gl_PointSize hardware cap
+      // Sol — offset 7 Mm from origin so Cesium's WGS84 ellipsoid culling doesn't apply.
+      // Billboard (textured quad) instead of PointPrimitive: WebGL gl_PointSize is capped
+      // at ~64px on most GPUs, silently clipping the large outer glow layers.
       const SUN_POS = new Cartesian3(7e6, 0, 0)
       const sunCanvas = document.createElement('canvas')
       sunCanvas.width = 256; sunCanvas.height = 256
@@ -153,7 +179,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       // Sol label
       const sunLabel = new LabelCollection()
       sunLabel.add({
-        position: Cartesian3.ZERO,
+        position: SUN_POS,
         text: 'Sol',
         font: 'bold 13px monospace',
         fillColor: Color.fromCssColorString('#fff5aa'),
@@ -165,7 +191,80 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(sunLabel)
 
-      // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
+      return () => {
+        if (!viewer.isDestroyed()) {
+          scene.primitives.remove(sunBillboards)
+          scene.primitives.remove(sunLabel)
+        }
+      }
+    }, [viewer])
+
+    // All planets — multi-layer glows + labels; re-runs when time advances so planets move
+    useEffect(() => {
+      if (!viewer) return
+
+      const scene = viewer.scene
+      const allPlanetPoints = new PointPrimitiveCollection()
+      const planetLabels = new LabelCollection()
+
+      PLANETS.forEach((p) => {
+        const deg = planetAngleDeg(p.angleDeg, p.periodDays, currentMjd)
+        const rad = (deg * Math.PI) / 180
+        const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
+        planetLabels.add({
+          position: pos,
+          text: p.name,
+          font: '12px monospace',
+          fillColor: Color.fromCssColorString(p.color),
+          outlineColor: Color.BLACK,
+          outlineWidth: 3,
+          style: LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cartesian2(p.pointSize / 2 + 6, 0),
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        })
+
+        if (p.id === 'mercury') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#aaaaaa').withAlpha(0.12), pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#bbbbbb').withAlpha(0.42), pixelSize: 32,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cccccc').withAlpha(0.80), pixelSize: 16,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#dddddd'),                 pixelSize: 8,   disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:mercury' })
+        } else if (p.id === 'venus') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#c8a840').withAlpha(0.13), pixelSize: 80,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#d8bc60').withAlpha(0.44), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ecd880').withAlpha(0.82), pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#f0d080'),                 pixelSize: 10,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:venus' })
+        } else if (p.id === 'earth') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#1a4a8a').withAlpha(0.20), pixelSize: 140, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#2266bb').withAlpha(0.45), pixelSize: 72,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#55aaee').withAlpha(0.80), pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cceeff'),                 pixelSize: 22,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:earth' })
+        } else if (p.id === 'mars') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#8a2a1a').withAlpha(0.12), pixelSize: 70,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#cc4422').withAlpha(0.40), pixelSize: 36,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ee7755').withAlpha(0.78), pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ff8866'),                 pixelSize: 9,   disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:mars' })
+        } else if (p.id === 'jupiter') {
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#7a5c33').withAlpha(0.18), pixelSize: 150, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#aa8855').withAlpha(0.42), pixelSize: 84,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#ccaa77').withAlpha(0.80), pixelSize: 48,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+          allPlanetPoints.add({ position: pos, color: Color.fromCssColorString('#eecc99'),                 pixelSize: 30,  disableDepthTestDistance: Number.POSITIVE_INFINITY, id: 'planet:jupiter' })
+        }
+      })
+
+      // Planet orbit rings — live here (not in [viewer] effect) so Cesium renders them reliably
+      const planetLines = new PolylineCollection()
+      PLANETS.forEach((p) => {
+        planetLines.add({
+          positions: eclipticCircle(p.sma),
+          width: p.name === 'Earth' ? 2 : 1,
+          material: Material.fromType(Material.ColorType, {
+            color: Color.fromCssColorString(p.color).withAlpha(p.ringAlpha),
+          }),
+        })
+      })
+      scene.primitives.add(planetLines)
+
+      // Main asteroid belt context rings (2.2–3.2 AU, faint grey)
       const beltLines = new PolylineCollection()
       beltLines.add({
         positions: eclipticCircle(2.2),
@@ -183,66 +282,104 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(beltLines)
 
-      return () => {
-        if (!viewer.isDestroyed()) {
-          scene.primitives.remove(sunBillboards)
-          scene.primitives.remove(sunLabel)
-          scene.primitives.remove(beltLines)
-        }
-      }
-    }, [viewer])
-
-    // Planet orbit rings + points — re-runs with time so positions stay current
-    useEffect(() => {
-      if (!viewer) return
-
-      const scene = viewer.scene
-
-      const planetLines = new PolylineCollection()
-      PLANETS.forEach((p) => {
-        planetLines.add({
-          positions: eclipticCircle(p.sma),
-          width: p.name === 'Earth' ? 2 : 1,
-          material: Material.fromType(Material.ColorType, {
-            color: Color.fromCssColorString(p.color).withAlpha(p.ringAlpha),
-          }),
-        })
-      })
-      scene.primitives.add(planetLines)
-
-      const planetPoints = new PointPrimitiveCollection()
-      const planetLabels = new LabelCollection()
-      PLANETS.forEach((p) => {
-        const deg = planetAngleDeg(p.angleDeg, p.periodDays, currentMjd)
-        const rad = (deg * Math.PI) / 180
-        const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
-        planetPoints.add({
-          position: pos,
-          color: Color.fromCssColorString(p.color),
-          pixelSize: p.pointSize,
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-          id: `planet:${p.id}`,
-        })
-        planetLabels.add({
-          position: pos,
-          text: p.name,
-          font: '12px monospace',
-          fillColor: Color.fromCssColorString(p.color),
-          outlineColor: Color.BLACK,
-          outlineWidth: 3,
-          style: LabelStyle.FILL_AND_OUTLINE,
-          pixelOffset: new Cartesian2(p.pointSize / 2 + 6, 0),
-          disableDepthTestDistance: Number.POSITIVE_INFINITY,
-        })
-      })
-      scene.primitives.add(planetPoints)
+      scene.primitives.add(allPlanetPoints)
       scene.primitives.add(planetLabels)
 
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(planetLines)
-          scene.primitives.remove(planetPoints)
+          scene.primitives.remove(beltLines)
+          scene.primitives.remove(allPlanetPoints)
           scene.primitives.remove(planetLabels)
+        }
+      }
+    }, [viewer, currentMjd])
+
+    // Earth — rotating sphere with atmosphere glow; position tracked from currentMjd
+    useEffect(() => {
+      if (!viewer) return
+      const scene = viewer.scene
+
+      const earth = PLANETS.find((p) => p.id === 'earth')!
+      const deg = planetAngleDeg(earth.angleDeg, earth.periodDays, currentMjd)
+      const rad = (deg * Math.PI) / 180
+      const earthPos = new Cartesian3(
+        Math.cos(rad) * earth.sma * AU_M,
+        Math.sin(rad) * earth.sma * AU_M,
+        0,
+      )
+
+      const EARTH_RADIUS = 2e9
+      const TILT = (23.45 * Math.PI) / 180
+      const tiltAxis = Cartesian3.normalize(
+        new Cartesian3(Math.sin(TILT), 0, Math.cos(TILT)),
+        new Cartesian3(),
+      )
+
+      const buildMatrix = (angle: number): Matrix4 =>
+        Matrix4.fromRotationTranslation(
+          Matrix3.fromQuaternion(Quaternion.fromAxisAngle(tiltAxis, angle)),
+          earthPos,
+        )
+
+      const earthSphere = scene.primitives.add(
+        new Primitive({
+          geometryInstances: new GeometryInstance({
+            geometry: new EllipsoidGeometry({
+              radii: new Cartesian3(EARTH_RADIUS, EARTH_RADIUS, EARTH_RADIUS),
+              vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT,
+            }),
+            attributes: {
+              color: ColorGeometryInstanceAttribute.fromColor(Color.fromCssColorString('#1a4f8c')),
+            },
+          }),
+          appearance: new PerInstanceColorAppearance({ translucent: false, flat: true }),
+          modelMatrix: buildMatrix(earthRotationRad(currentMjdRef.current)),
+          asynchronous: false,
+        }),
+      )
+
+      const atmosphere = scene.primitives.add(
+        new Primitive({
+          geometryInstances: new GeometryInstance({
+            geometry: new EllipsoidGeometry({
+              radii: new Cartesian3(EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08, EARTH_RADIUS * 1.08),
+              vertexFormat: PerInstanceColorAppearance.VERTEX_FORMAT,
+            }),
+            attributes: {
+              color: ColorGeometryInstanceAttribute.fromColor(Color.fromCssColorString('#4499ff').withAlpha(0.07)),
+            },
+          }),
+          appearance: new PerInstanceColorAppearance({ translucent: true, flat: true }),
+          modelMatrix: Matrix4.fromTranslation(earthPos),
+          asynchronous: false,
+        }),
+      )
+
+      // Transparent point keeps the existing string-id click handler working
+      const pickPoints = new PointPrimitiveCollection()
+      pickPoints.add({
+        position: earthPos,
+        color: Color.TRANSPARENT,
+        pixelSize: 28,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        id: 'planet:earth',
+      })
+      scene.primitives.add(pickPoints)
+
+      // Update rotation each frame via preRender
+      const stopRotation = scene.preRender.addEventListener(() => {
+        if (!earthSphere.isDestroyed()) {
+          earthSphere.modelMatrix = buildMatrix(earthRotationRad(currentMjdRef.current))
+        }
+      })
+
+      return () => {
+        stopRotation()
+        if (!viewer.isDestroyed()) {
+          scene.primitives.remove(earthSphere)
+          scene.primitives.remove(atmosphere)
+          scene.primitives.remove(pickPoints)
         }
       }
     }, [viewer, currentMjd])
@@ -299,7 +436,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       }
     }, [viewer, asteroids, displayId, hoveredId, colorMode, currentMjd])
 
-    // Selected orbit arc — animated sweep in, fade out; cheap enough to re-run each RAF tick
+    // Selected orbit — full path, persistent while selected, fades on deselect
     useEffect(() => {
       if (!viewer || !displayId) return
 
@@ -313,20 +450,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           : scoreToHex(asteroid[colorMode], 0, 1)
       const color = Color.fromCssColorString(hex)
 
-      const allPositions = orbitToCartesian3(
-        asteroid.semi_major_axis_au,
-        asteroid.eccentricity,
-        asteroid.inclination_deg,
-        asteroid.longitude_of_ascending_node_deg,
-        asteroid.argument_of_periapsis_deg,
-      )
-
-      const visibleCount = Math.max(2, Math.ceil(revealProgress * allPositions.length))
-      const positions = allPositions.slice(0, visibleCount)
-
       const orbitLines = new PolylineCollection()
       orbitLines.add({
-        positions,
+        positions: orbitToCartesian3(
+          asteroid.semi_major_axis_au,
+          asteroid.eccentricity,
+          asteroid.inclination_deg,
+          asteroid.longitude_of_ascending_node_deg,
+          asteroid.argument_of_periapsis_deg,
+        ),
         width: 3,
         material: Material.fromType(Material.ColorType, {
           color: color.withAlpha(fadeAlpha),
@@ -338,7 +470,34 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       return () => {
         if (!viewer.isDestroyed()) scene.primitives.remove(orbitLines)
       }
-    }, [viewer, asteroids, displayId, revealProgress, fadeAlpha, colorMode])
+    }, [viewer, asteroids, displayId, fadeAlpha, colorMode])
+
+    // Hohmann transfer arc — orange semi-ellipse from Earth's current position to selected asteroid
+    useEffect(() => {
+      if (!viewer || !displayId) return
+
+      const asteroid = asteroids.find((a) => a.nasa_jpl_id === displayId)
+      if (!asteroid) return
+
+      const scene = viewer.scene
+      const earth = PLANETS.find((p) => p.id === 'earth')!
+      const earthLonDeg = planetAngleDeg(earth.angleDeg, earth.periodDays, currentMjd)
+
+      const hohmannLines = new PolylineCollection()
+      hohmannLines.add({
+        positions: hohmannTransferPoints(earthLonDeg, asteroid.semi_major_axis_au),
+        width: 2,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#ff8833').withAlpha(fadeAlpha * 0.75),
+        }),
+      })
+
+      scene.primitives.add(hohmannLines)
+
+      return () => {
+        if (!viewer.isDestroyed()) scene.primitives.remove(hohmannLines)
+      }
+    }, [viewer, asteroids, displayId, fadeAlpha, currentMjd])
 
     // Click picking — select asteroid or planet, then flyTo
     useEffect(() => {
@@ -348,7 +507,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       handler.setInputAction(
         (event: { position: { x: number; y: number } }) => {
-          const picked = viewer.scene.pick(event.position as unknown as Cartesian2)
+          const picked = viewer.scene.pick(new Cartesian2(event.position.x, event.position.y))
           if (!defined(picked)) {
             onSelect(null)
             return
@@ -377,7 +536,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       handler.setInputAction(
         (event: { endPosition: { x: number; y: number } }) => {
-          const picked = viewer.scene.pick(event.endPosition as unknown as Cartesian2)
+          const picked = viewer.scene.pick(new Cartesian2(event.endPosition.x, event.endPosition.y))
           if (defined(picked) && typeof picked.id === 'string' && !picked.id.startsWith('planet:')) {
             onHover(picked.id)
           } else {

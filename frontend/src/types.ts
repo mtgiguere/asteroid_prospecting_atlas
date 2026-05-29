@@ -1,3 +1,37 @@
+export interface LaunchWindow {
+  days_until_window: number
+  transit_days: number
+  synodic_period_days: number
+  launch_date: string
+  arrival_date: string
+  window_label: string
+  repeat_label: string
+}
+
+export interface CostTier {
+  cost_usd: number
+  cost_label: string
+  roi_ratio: number
+  roi_label: string
+}
+
+export interface CostTiers {
+  flyby: CostTier
+  rendezvous: CostTier
+  sample_return: CostTier
+  recommended: 'flyby' | 'rendezvous' | 'sample_return' | 'survey_only'
+}
+
+export interface MissionRoi {
+  resource_value_usd: number
+  resource_value_label: string
+  reach_rating: string
+  reach_summary: string
+  mission_grade: string
+  summary: string
+  cost_tiers: CostTiers
+}
+
 export interface ResourceProfile {
   type_group: string
   type_label: string
@@ -28,9 +62,12 @@ export interface AsteroidOrbit {
   perihelion_au: number
   aphelion_au: number
   earth_orbit_crossing: boolean
+  delta_v_kms: number
   accessibility_score: number
   prospecting_score: number
   resource_profile: ResourceProfile
+  launch_window: LaunchWindow
+  mission_roi: MissionRoi
 }
 
 export type ColorMode = 'spectral_type' | 'prospecting_score' | 'accessibility_score'
@@ -39,3 +76,5 @@ export type FlyTarget =
   | { kind: 'sol' }
   | { kind: 'planet'; planetId: string }
   | { kind: 'asteroid'; asteroid: AsteroidOrbit }
+
+export type RendererMode = 'cesium' | 'spacekit'

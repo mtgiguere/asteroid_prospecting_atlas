@@ -1,10 +1,10 @@
 """
 accessibility.py
 
-Heuristic scoring for asteroid accessibility relative to Earth's orbit.
+Accessibility scoring for asteroid missions relative to Earth.
 """
 
-from asteroid_atlas.analytics.delta_v import estimate_delta_v_au
+from asteroid_atlas.analytics.delta_v import estimate_delta_v
 
 
 def calculate_accessibility_score(
@@ -13,15 +13,9 @@ def calculate_accessibility_score(
     inclination_deg: float,
 ) -> float:
     """
-    Estimate orbital accessibility relative to Earth.
+    Return the estimated heliocentric delta-v (km/s) to rendezvous with this asteroid.
 
-    Lower scores indicate orbits more similar to Earth's orbit.
+    Lower values indicate more accessible orbits. A perfectly Earth-like orbit
+    (a=1, e=0, i=0) returns 0.0.
     """
-
-    orbital_similarity = abs(semi_major_axis_au - 1.0) + eccentricity + (inclination_deg / 180.0)
-
-    delta_v = estimate_delta_v_au(semi_major_axis_au)
-
-    score = orbital_similarity + delta_v
-
-    return score
+    return estimate_delta_v(a=semi_major_axis_au, e=eccentricity, i_deg=inclination_deg)

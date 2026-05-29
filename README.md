@@ -4,7 +4,9 @@ A scientifically grounded 3D solar system explorer that ranks near-Earth asteroi
 
 **[Live Demo →](https://asteroidprospectingatlas-production.up.railway.app)**
 
-![Asteroid Prospecting Atlas](docs/screenshot.png)
+| Cesium renderer | Spacekit.js renderer |
+|---|---|
+| ![Cesium view](docs/cesium.png) | ![Spacekit view](docs/spacekit.png) |
 
 ---
 
@@ -134,10 +136,32 @@ asteroid_prospecting_atlas/
 
 Each asteroid receives two scores (0–1):
 
-- **Prospecting Score** — weighted combination of estimated resource mass (water, metals, PGMs) normalized against the full dataset
-- **Accessibility Score** — orbital similarity to Earth based on semi-major axis, eccentricity, and inclination delta-v approximation
+- **Prospecting Score** — resource value divided by delta-v², normalized percentile-wise across the full 500-asteroid catalog. Delta-v is squared because mission energy scales with velocity squared.
+- **Accessibility Score** — orbital similarity to Earth based on semi-major axis, eccentricity, and inclination delta-v approximation, again percentile-normalized.
 
-Full methodology in [`docs/scoring.md`](docs/scoring.md).
+### Why are the dollar values so large?
+
+Short answer: asteroids are enormous, and the math is correct.
+
+A 34 km asteroid modelled as a sphere at 2,700 kg/m³ has a mass of roughly **55 trillion kg**. At 10 parts per million of platinum-group metals, that's **556 billion kg of PGMs** — about 8,000× Earth's total known platinum reserves, at $30,000/kg. The base metals add hundreds of trillions more on their own.
+
+The valuation formula is:
+
+```
+value = (water_kg × $1,000) + (metal_kg × $10) + (pgm_kg × $30,000)
+```
+
+Commodity prices:
+
+| Resource | USD/kg | Basis |
+|----------|--------|-------|
+| Platinum-group metals | $30,000 | Platinum spot price |
+| Base metals (iron/nickel) | $10 | Scrap metal |
+| Water | $1,000 | Cost-to-orbit proxy for in-space fuel depots |
+
+These are **theoretical upper bounds on extractable value at current commodity prices** — not business projections. The numbers are useful for ranking targets relative to each other and making the resource case for specific spectral types. Bringing thousands of tonnes of platinum to Earth would collapse the platinum market; the real near-term use case is in-space: water for propellant, metals for orbital construction.
+
+Full methodology, worked examples, and references in [`docs/scoring.md`](docs/scoring.md).
 
 ---
 

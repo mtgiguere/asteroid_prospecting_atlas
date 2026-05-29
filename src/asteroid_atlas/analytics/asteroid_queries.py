@@ -5,6 +5,17 @@ Read/query helpers for asteroid analytics.
 """
 
 from asteroid_atlas.analytics.accessibility import calculate_accessibility_score
+from asteroid_atlas.analytics.launch_window import compute_launch_window
+from asteroid_atlas.analytics.mission_roi import (
+    compute_cost_tiers,
+    compute_resource_value_usd,
+    compute_roi_score,
+    format_value_usd,
+    mission_summary,
+    reach_rating,
+    reach_summary,
+    roi_to_grade,
+)
 from asteroid_atlas.analytics.orbital_classification import is_earth_orbit_crossing
 from asteroid_atlas.analytics.orbital_metrics import calculate_perihelion_aphelion
 from asteroid_atlas.analytics.prospecting import calculate_prospecting_score
@@ -98,6 +109,7 @@ def list_asteroids_for_visualization(
     limit: int = 200,
     earth_crossing_only: bool = False,
     nasa_jpl_ids: list[str] | None = None,
+    current_mjd: float = 51544.0,
 ) -> list[dict]:
     """
     Full orbital elements + computed scores for 3D visualization.
@@ -139,6 +151,7 @@ def list_asteroids_for_visualization(
                 "perihelion_au": round(perihelion, 6),
                 "aphelion_au": round(aphelion, 6),
                 "earth_orbit_crossing": earth_crossing,
+                "delta_v_kms": round(accessibility_score, 2),
                 "accessibility_score": round(accessibility_score, 4),
                 "prospecting_score": round(prospecting_score, 4),
             }
@@ -147,6 +160,8 @@ def list_asteroids_for_visualization(
     scored.sort(key=lambda r: r["prospecting_score"])
     top = scored[:limit]
 
+    # Compute resource profiles and ROI scores for all top rows
+    roi_scores = []
     for row in top:
         rp = compute_resource_profile(
             spectral_type=row.get("spectral_type"),
@@ -162,6 +177,43 @@ def list_asteroids_for_visualization(
             "pgm_mass_kg": rp.pgm_mass_kg,
             "why_go_here": rp.why_go_here,
         }
+        resource_value = compute_resource_value_usd(
+            water_kg=rp.water_mass_kg,
+            metal_kg=rp.metal_mass_kg,
+            pgm_kg=rp.pgm_mass_kg,
+        )
+        row["_resource_value_usd"] = resource_value
+        row["_roi_score"] = compute_roi_score(resource_value, row["delta_v_kms"])
+        roi_scores.append(row["_roi_score"])
+
+    # Grade requires the full distribution, so compute after all ROI scores are known
+    for row in top:
+        dv = row["delta_v_kms"]
+        rp_group = row["resource_profile"]["type_group"]
+        grade = roi_to_grade(row["_roi_score"], roi_scores)
+        reach = reach_rating(dv)
+        row["mission_roi"] = {
+            "resource_value_usd": row["_resource_value_usd"],
+            "resource_value_label": format_value_usd(row["_resource_value_usd"]),
+            "reach_rating": reach,
+            "reach_summary": reach_summary(dv),
+            "mission_grade": grade,
+            "summary": mission_summary(rp_group, grade, reach),
+            "cost_tiers": compute_cost_tiers(row["_resource_value_usd"]),
+        }
+        del row["_resource_value_usd"]
+        del row["_roi_score"]
+
+        row["launch_window"] = compute_launch_window(
+            a=row["semi_major_axis_au"],
+            e=row["eccentricity"],
+            i_deg=row["inclination_deg"],
+            epoch_mjd=row["epoch_mjd"],
+            current_mjd=current_mjd,
+            om_deg=row.get("longitude_of_ascending_node_deg", 0.0),
+            w_deg=row.get("argument_of_periapsis_deg", 0.0),
+            ma_epoch_deg=row.get("mean_anomaly_deg", 0.0),
+        )
 
     return top
 
