@@ -9,6 +9,7 @@ import {
   LabelStyle,
   PolylineCollection,
   PointPrimitiveCollection,
+  BillboardCollection,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   Material,
@@ -19,7 +20,7 @@ import {
 import type { AsteroidOrbit, FlyTarget, ColorMode } from '../types'
 import { PLANETS } from '../constants/solarSystem'
 import { orbitToCartesian3, eclipticCircle, AU_M } from '../utils/orbitGeometry'
-import { positionAtMjd } from '../utils/orbitMechanics'
+import { positionAtMjd, planetAngleDeg } from '../utils/orbitMechanics'
 import { useOrbitAnimation } from '../hooks/useOrbitAnimation'
 import { scoreToHex } from '../utils/colorScale'
 import { spectralTypeGroupToHex } from '../utils/spectralTypeColor'
@@ -56,16 +57,23 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         flyTo(target: FlyTarget) {
           if (!viewer) return
 
+          if (target.kind === 'sol') {
+            viewer.camera.flyTo({
+              destination: new Cartesian3(0, 0, 2.8e11),
+              orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
+              duration: 2.0,
+            })
+            return
+          }
+
           let position: Cartesian3
           let radius: number
 
-          if (target.kind === 'sol') {
-            position = Cartesian3.ZERO
-            radius = 1.8e11
-          } else if (target.kind === 'planet') {
+          if (target.kind === 'planet') {
             const planet = PLANETS.find((p) => p.id === target.planetId)
             if (!planet) return
-            const rad = (planet.angleDeg * Math.PI) / 180
+            const deg = planetAngleDeg(planet.angleDeg, planet.periodDays, currentMjdRef.current)
+            const rad = (deg * Math.PI) / 180
             position = new Cartesian3(
               Math.cos(rad) * planet.sma * AU_M,
               Math.sin(rad) * planet.sma * AU_M,
@@ -95,7 +103,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       [viewer],
     )
 
-    // One-time scene setup
+    // One-time scene setup — Sun billboard, Sol label, belt rings, camera config
     useEffect(() => {
       if (!viewer) return
 
@@ -112,16 +120,35 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
 
       const controller = viewer.scene.screenSpaceCameraController
-      controller.zoomFactor = 2.0          // default 5.0 — much too fast at AU scale
-      controller.minimumZoomDistance = 1e8 // ~0.001 AU — close enough to inspect a rock
+      controller.zoomFactor = 2.0
+      controller.minimumZoomDistance = 1e8
 
-      // Sol — 4-layer glow (outer halo + mid corona + bright core + white hot centre)
-      const sunPoints = new PointPrimitiveCollection()
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 160, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 90,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 42,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 18,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      scene.primitives.add(sunPoints)
+      // Sol — canvas radial gradient billboard bypasses WebGL gl_PointSize hardware cap
+      const SUN_POS = new Cartesian3(7e6, 0, 0)
+      const sunCanvas = document.createElement('canvas')
+      sunCanvas.width = 256; sunCanvas.height = 256
+      const sunCtx = sunCanvas.getContext('2d')
+      if (sunCtx) {
+        const grad = sunCtx.createRadialGradient(128, 128, 0, 128, 128, 128)
+        grad.addColorStop(0.00, 'rgba(255, 252, 240, 1.00)')
+        grad.addColorStop(0.06, 'rgba(255, 248, 200, 0.95)')
+        grad.addColorStop(0.14, 'rgba(255, 230,  80, 0.80)')
+        grad.addColorStop(0.28, 'rgba(255, 170,  10, 0.55)')
+        grad.addColorStop(0.48, 'rgba(255, 110,   0, 0.28)')
+        grad.addColorStop(0.68, 'rgba(255,  70,   0, 0.10)')
+        grad.addColorStop(1.00, 'rgba(255,  40,   0, 0.00)')
+        sunCtx.fillStyle = grad
+        sunCtx.fillRect(0, 0, 256, 256)
+      }
+      const sunBillboards = new BillboardCollection()
+      sunBillboards.add({
+        position: SUN_POS,
+        image: sunCanvas,
+        scale: 1.2,
+        sizeInMeters: false,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      })
+      scene.primitives.add(sunBillboards)
 
       // Sol label
       const sunLabel = new LabelCollection()
@@ -138,7 +165,39 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(sunLabel)
 
-      // Planet orbit rings
+      // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
+      const beltLines = new PolylineCollection()
+      beltLines.add({
+        positions: eclipticCircle(2.2),
+        width: 1,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#555566').withAlpha(0.25),
+        }),
+      })
+      beltLines.add({
+        positions: eclipticCircle(3.2),
+        width: 1,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#555566').withAlpha(0.25),
+        }),
+      })
+      scene.primitives.add(beltLines)
+
+      return () => {
+        if (!viewer.isDestroyed()) {
+          scene.primitives.remove(sunBillboards)
+          scene.primitives.remove(sunLabel)
+          scene.primitives.remove(beltLines)
+        }
+      }
+    }, [viewer])
+
+    // Planet orbit rings + points — re-runs with time so positions stay current
+    useEffect(() => {
+      if (!viewer) return
+
+      const scene = viewer.scene
+
       const planetLines = new PolylineCollection()
       PLANETS.forEach((p) => {
         planetLines.add({
@@ -151,11 +210,11 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(planetLines)
 
-      // Planet points + name labels
       const planetPoints = new PointPrimitiveCollection()
       const planetLabels = new LabelCollection()
       PLANETS.forEach((p) => {
-        const rad = (p.angleDeg * Math.PI) / 180
+        const deg = planetAngleDeg(p.angleDeg, p.periodDays, currentMjd)
+        const rad = (deg * Math.PI) / 180
         const pos = new Cartesian3(Math.cos(rad) * p.sma * AU_M, Math.sin(rad) * p.sma * AU_M, 0)
         planetPoints.add({
           position: pos,
@@ -179,35 +238,14 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       scene.primitives.add(planetPoints)
       scene.primitives.add(planetLabels)
 
-      // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
-      const beltLines = new PolylineCollection()
-      beltLines.add({
-        positions: eclipticCircle(2.2),
-        width: 1,
-        material: Material.fromType(Material.ColorType, {
-          color: Color.fromCssColorString('#555566').withAlpha(0.25),
-        }),
-      })
-      beltLines.add({
-        positions: eclipticCircle(3.2),
-        width: 1,
-        material: Material.fromType(Material.ColorType, {
-          color: Color.fromCssColorString('#555566').withAlpha(0.25),
-        }),
-      })
-      scene.primitives.add(beltLines)
-
       return () => {
         if (!viewer.isDestroyed()) {
-          scene.primitives.remove(sunPoints)
-          scene.primitives.remove(sunLabel)
           scene.primitives.remove(planetLines)
           scene.primitives.remove(planetPoints)
           scene.primitives.remove(planetLabels)
-          scene.primitives.remove(beltLines)
         }
       }
-    }, [viewer])
+    }, [viewer, currentMjd])
 
     // Asteroid points — re-runs when data, date, or colors change
     useEffect(() => {

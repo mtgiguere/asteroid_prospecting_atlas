@@ -73,3 +73,9 @@ export function mjdToDateString(mjd: number): string {
 export function todayMjd(): number {
   return dateToMjd(new Date())
 }
+
+export function planetAngleDeg(j2000AngleDeg: number, periodDays: number, mjd: number): number {
+  const J2000_MJD = 51544.5
+  const elapsed = mjd - J2000_MJD
+  return ((j2000AngleDeg + (elapsed / periodDays) * 360) % 360 + 360) % 360
+}

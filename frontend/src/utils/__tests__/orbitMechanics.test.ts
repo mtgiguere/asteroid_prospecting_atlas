@@ -4,6 +4,7 @@ import {
   positionAtMjd,
   mjdToDateString,
   dateToMjd,
+  planetAngleDeg,
   type OrbitalElements,
 } from '../orbitMechanics'
 
@@ -111,5 +112,31 @@ describe('mjdToDateString', () => {
 describe('dateToMjd', () => {
   it('converts 2000-01-01 to MJD 51544.0', () => {
     expect(dateToMjd(new Date('2000-01-01T00:00:00Z'))).toBeCloseTo(51544.0, 5)
+  })
+})
+
+describe('planetAngleDeg', () => {
+  const J2000_MJD = 51544.5
+
+  it('returns j2000AngleDeg unchanged at J2000 epoch', () => {
+    expect(planetAngleDeg(100, 365.25, J2000_MJD)).toBeCloseTo(100, 5)
+  })
+
+  it('advances by 360° after exactly one period', () => {
+    const start = planetAngleDeg(45, 365.25, J2000_MJD)
+    const end   = planetAngleDeg(45, 365.25, J2000_MJD + 365.25)
+    expect((end - start + 360) % 360).toBeCloseTo(0, 3)
+  })
+
+  it('advances by 180° after half a period', () => {
+    const start = planetAngleDeg(0, 365.25, J2000_MJD)
+    const end   = planetAngleDeg(0, 365.25, J2000_MJD + 365.25 / 2)
+    expect(Math.abs(end - start - 180)).toBeLessThan(0.01)
+  })
+
+  it('returns angle in [0, 360)', () => {
+    const a = planetAngleDeg(350, 365.25, J2000_MJD + 100)
+    expect(a).toBeGreaterThanOrEqual(0)
+    expect(a).toBeLessThan(360)
   })
 })
