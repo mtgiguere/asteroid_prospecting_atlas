@@ -83,10 +83,10 @@ vi.mock('cesium', () => {
 })
 
 // ── Resium mock ────────────────────────────────────────────────────────────
-vi.mock('resium', () => {
-  const { forwardRef, useEffect, createElement } = require('react')
+vi.mock('resium', async () => {
+  const { forwardRef, useEffect, createElement } = await import('react')
   return {
-    Viewer: forwardRef((props: any, ref: any) => {
+    Viewer: forwardRef((_props: any, ref: any) => {
       useEffect(() => {
         const fakeScene = {
           globe: { show: true },
@@ -188,10 +188,10 @@ describe('SolarSystemViewer Sun placement', () => {
     render(<SolarSystemViewer {...baseProps} />)
     await waitFor(() => expect(mockPointsAdd).toHaveBeenCalled())
 
-    const atOrigin = mockPointsAdd.mock.calls.find(
-      ([opts]: [any]) =>
-        opts.position?.x === 0 && opts.position?.y === 0 && opts.position?.z === 0,
-    )
+    const atOrigin = mockPointsAdd.mock.calls.find((call) => {
+      const opts = call[0]
+      return opts?.position?.x === 0 && opts?.position?.y === 0 && opts?.position?.z === 0
+    })
     expect(atOrigin).toBeUndefined()
   })
 })
