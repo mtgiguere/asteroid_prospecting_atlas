@@ -68,12 +68,13 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           let radius: number
 
           if (target.kind === 'sol') {
-            position = Cartesian3.ZERO
+            position = new Cartesian3(7e6, 0, 0)
             radius = 1.8e11
           } else if (target.kind === 'planet') {
             const planet = PLANETS.find((p) => p.id === target.planetId)
             if (!planet) return
-            const rad = (planet.angleDeg * Math.PI) / 180
+            const deg = planetAngleDeg(planet.angleDeg, planet.periodDays, currentMjdRef.current)
+            const rad = (deg * Math.PI) / 180
             position = new Cartesian3(
               Math.cos(rad) * planet.sma * AU_M,
               Math.sin(rad) * planet.sma * AU_M,
@@ -129,18 +130,20 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       controller.zoomFactor = 2.0          // default 5.0 — much too fast at AU scale
       controller.minimumZoomDistance = 1e8 // ~0.001 AU — close enough to inspect a rock
 
-      // Sol — 4-layer glow (outer halo + mid corona + bright core + white hot centre)
+      // Sol — offset 7 Mm from origin so Cesium's horizon culling (WGS84 ellipsoid
+      // radius ≈ 6371 km) doesn't occlude it. 7e6 m is invisible at AU scale.
+      const SUN_POS = new Cartesian3(7e6, 0, 0)
       const sunPoints = new PointPrimitiveCollection()
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 200, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 120, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 28,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 200, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 120, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 28,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
       scene.primitives.add(sunPoints)
 
       // Sol label
       const sunLabel = new LabelCollection()
       sunLabel.add({
-        position: Cartesian3.ZERO,
+        position: SUN_POS,
         text: 'Sol',
         font: 'bold 13px monospace',
         fillColor: Color.fromCssColorString('#fff5aa'),
