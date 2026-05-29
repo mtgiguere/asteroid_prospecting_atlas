@@ -8,6 +8,7 @@ interface Props {
   allAsteroids: AsteroidOrbit[]
   onClose: () => void
   onSelectCompanion: (asteroid: AsteroidOrbit) => void
+  onCompare?: () => void
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -49,7 +50,7 @@ function CostTiersTable({ tiers }: { tiers: CostTiers }) {
   )
 }
 
-export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose, onSelectCompanion }: Props) {
+export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose, onSelectCompanion, onCompare }: Props) {
   const roi = asteroid.mission_roi
   const companions = suggestCompanions(asteroid, allAsteroids, 2)
 
@@ -60,7 +61,14 @@ export function AsteroidInfoPanel({ asteroid, allAsteroids, onClose, onSelectCom
           <div className={styles.name}>{asteroid.name}</div>
           <div className={styles.jplId}>JPL {asteroid.nasa_jpl_id}</div>
         </div>
-        <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {onCompare && (
+            <button className={styles.closeBtn} onClick={onCompare} aria-label="Compare" style={{ fontSize: 10, letterSpacing: '0.1em', padding: '3px 8px', border: '1px solid rgba(0,212,255,0.3)', borderRadius: 3 }}>
+              COMPARE
+            </button>
+          )}
+          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">✕</button>
+        </div>
       </div>
 
       {asteroid.earth_orbit_crossing && (

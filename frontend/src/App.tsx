@@ -3,6 +3,7 @@ import { SolarSystemViewer } from './components/SolarSystemViewer'
 import type { SolarSystemViewerHandle } from './components/SolarSystemViewer'
 import { SpacekitViewer } from './components/SpacekitViewer'
 import { AsteroidInfoPanel } from './components/AsteroidInfoPanel'
+import { ComparisonPanel } from './components/ComparisonPanel'
 import { Controls } from './components/Controls'
 import { NavigationSidebar } from './components/NavigationSidebar'
 import { SpectralTypeLegend } from './components/SpectralTypeLegend'
@@ -18,6 +19,7 @@ export default function App() {
   const [earthCrossingOnly, setEarthCrossingOnly] = useState(false)
   const [colorMode, setColorMode] = useState<ColorMode>('spectral_type')
   const [selected, setSelected] = useState<AsteroidOrbit | null>(null)
+  const [pinnedForCompare, setPinnedForCompare] = useState<AsteroidOrbit | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [currentMjd, setCurrentMjd] = useState(() => todayMjd())
   const [playing, setPlaying] = useState(false)
@@ -97,16 +99,24 @@ export default function App() {
         )}
 
         {selected && (
-          <>
-            <span data-testid="selected-orbit-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
-            <AsteroidInfoPanel
-              asteroid={selected}
-              allAsteroids={asteroids}
-              onClose={() => setSelected(null)}
-              onSelectCompanion={(a) => { setSelected(a); viewerRef.current?.flyTo({ kind: 'asteroid', asteroid: a }) }}
-            />
-          </>
+          <span data-testid="selected-orbit-indicator" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} />
         )}
+
+        {pinnedForCompare && selected && selected.nasa_jpl_id !== pinnedForCompare.nasa_jpl_id ? (
+          <ComparisonPanel
+            asteroidA={pinnedForCompare}
+            asteroidB={selected}
+            onClose={() => { setPinnedForCompare(null); setSelected(null) }}
+          />
+        ) : selected ? (
+          <AsteroidInfoPanel
+            asteroid={selected}
+            allAsteroids={asteroids}
+            onClose={() => { setSelected(null); setPinnedForCompare(null) }}
+            onSelectCompanion={(a) => { setSelected(a); viewerRef.current?.flyTo({ kind: 'asteroid', asteroid: a }) }}
+            onCompare={() => setPinnedForCompare(selected)}
+          />
+        ) : null}
 
         {error && (
           <div
