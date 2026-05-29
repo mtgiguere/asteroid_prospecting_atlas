@@ -2,6 +2,9 @@
 main.py
 """
 
+import os
+from datetime import date
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,11 +15,14 @@ from asteroid_atlas.analytics.asteroid_queries import (
 )
 from asteroid_atlas.db.session import SessionLocal
 
+_default_origins = "http://localhost:5173,http://localhost:3000"
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", _default_origins).split(",")
+
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET"],
     allow_headers=["*"],
 )
@@ -27,8 +33,16 @@ def ping() -> dict[str, str]:
     return {"message": "pong"}
 
 
+def _today_mjd() -> float:
+    return 51544.0 + (date.today() - date(2000, 1, 1)).days
+
+
 @app.get("/asteroids/orbits")
-def get_asteroid_orbits(limit: int = 200, earth_crossing_only: bool = False):
+def get_asteroid_orbits(
+    limit: int = 200,
+    earth_crossing_only: bool = False,
+    current_mjd: float | None = None,
+):
     """
     Full orbital elements + prospecting and accessibility scores for 3D visualization.
     """
@@ -40,6 +54,7 @@ def get_asteroid_orbits(limit: int = 200, earth_crossing_only: bool = False):
             session,
             limit=limit,
             earth_crossing_only=earth_crossing_only,
+            current_mjd=current_mjd if current_mjd is not None else _today_mjd(),
         )
     finally:
         session.close()

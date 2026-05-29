@@ -105,11 +105,7 @@ vi.mock('resium', async () => {
         }
         const fakeViewer = {
           scene: fakeScene,
-          camera: {
-            setView: vi.fn(),
-            flyToBoundingSphere: mockFlyToBoundingSphere,
-            flyTo: mockCameraFlyTo,
-          },
+          camera: { setView: vi.fn(), flyToBoundingSphere: mockFlyToBoundingSphere, flyTo: mockCameraFlyTo },
           cesiumWidget: { creditContainer: { setAttribute: vi.fn() } },
           isDestroyed: () => false,
         }
@@ -140,8 +136,23 @@ const mockAsteroid: AsteroidOrbit = {
   perihelion_au: 2.25,
   aphelion_au: 2.75,
   earth_orbit_crossing: false,
+  delta_v_kms: 4.0,
   accessibility_score: 3.0,
   prospecting_score: 0.7,
+  mission_roi: {
+    resource_value_usd: 1e12,
+    resource_value_label: '$1T',
+    reach_rating: 'MODERATE',
+    reach_summary: 'ok',
+    mission_grade: 'STRONG',
+    summary: 'good',
+    cost_tiers: {
+      flyby:         { cost_usd: 3e8, cost_label: '$300M', roi_ratio: 3333, roi_label: '3333x' },
+      rendezvous:    { cost_usd: 8e8, cost_label: '$800M', roi_ratio: 1250, roi_label: '1250x' },
+      sample_return: { cost_usd: 2e9, cost_label: '$2B',   roi_ratio: 500,  roi_label: '500x'  },
+      recommended: 'sample_return',
+    },
+  },
   resource_profile: {
     type_group: 'S',
     type_label: 'Silicaceous',
@@ -151,6 +162,15 @@ const mockAsteroid: AsteroidOrbit = {
     metal_mass_kg: 5e11,
     pgm_mass_kg: null,
     why_go_here: 'metals',
+  },
+  launch_window: {
+    days_until_window: 100,
+    transit_days: 200,
+    synodic_period_days: 800,
+    launch_date: '2026-06-01',
+    arrival_date: '2026-12-18',
+    window_label: 'Opens in 3m',
+    repeat_label: 'Every 2.2 years',
   },
 }
 
@@ -166,14 +186,15 @@ const baseProps = {
 
 beforeEach(() => vi.clearAllMocks())
 
-// ── Bug 1: Sun rendering — PointPrimitive core always present ──
+// ── Bug 1: Sun glow rendered as Billboard (PointPrimitive gl_PointSize is capped ~64px by WebGL) ──
 describe('SolarSystemViewer Sun rendering', () => {
   it('renders Sun PointPrimitive at origin with disableDepthTestDistance so it is never clipped', async () => {
     render(<SolarSystemViewer {...baseProps} />)
-    await waitFor(() => expect(mockPointsAdd).toHaveBeenCalled())
-    const sunCall = mockPointsAdd.mock.calls[0]?.[0]
-    expect(sunCall?.position).toBeDefined()
-    expect(sunCall?.disableDepthTestDistance).toBe(Number.POSITIVE_INFINITY)
+    await waitFor(() => expect(mockBillboardAdd).toHaveBeenCalled())
+    const pos = mockBillboardAdd.mock.calls[0]?.[0]?.position
+    expect(pos).toBeDefined()
+    // Sun must be offset from origin so Cesium WGS84 ellipsoid culling doesn't apply
+    expect(pos.x !== 0 || pos.y !== 0 || pos.z !== 0).toBe(true)
   })
 })
 
@@ -212,9 +233,9 @@ describe('SolarSystemViewer flyTo planet', () => {
     const ref = createRef<SolarSystemViewerHandle>()
     const earth = PLANETS.find((p) => p.id === 'earth')!
 
-    // At J2000+263.3 d, Earth is near positive-x axis (angle ≈ 359°).
-    // With the bug (static angleDeg=100): x ≈ -0.174*AU_M (negative).
-    // With the fix (planetAngleDeg): x ≈ +1.0*AU_M (positive).
+    // At J2000+263.3 d, Earth is ~0.1° (near positive-x axis).
+    // With the bug, angleDeg=100.46° → x ≈ -0.183*AU_M (negative).
+    // With the fix, planetAngleDeg → x ≈ +1.0*AU_M (positive).
     const testMjd = 51544.5 + 263.3
 
     render(<SolarSystemViewer {...baseProps} currentMjd={testMjd} ref={ref} />)
