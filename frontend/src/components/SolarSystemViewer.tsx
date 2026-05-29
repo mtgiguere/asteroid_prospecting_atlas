@@ -123,8 +123,8 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       controller.zoomFactor = 2.0
       controller.minimumZoomDistance = 1e8
 
-      // Sol — canvas radial gradient billboard bypasses WebGL gl_PointSize hardware cap
-      const SUN_POS = new Cartesian3(7e6, 0, 0)
+      // Sol glow — Billboard using a canvas data URL so Cesium gets a loaded image,
+      // plus PointPrimitive core which is guaranteed to render at the origin.
       const sunCanvas = document.createElement('canvas')
       sunCanvas.width = 256; sunCanvas.height = 256
       const sunCtx = sunCanvas.getContext('2d')
@@ -140,14 +140,26 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         sunCtx.fillStyle = grad
         sunCtx.fillRect(0, 0, 256, 256)
       }
+      // PointPrimitive core — guaranteed to render at origin (always present)
+      const sunPoints = new PointPrimitiveCollection()
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 42, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      sunPoints.add({ position: Cartesian3.ZERO, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 18, disableDepthTestDistance: Number.POSITIVE_INFINITY })
+      scene.primitives.add(sunPoints)
+
+      // Billboard glow — canvas data URL bypasses gl_PointSize cap for the wide halo;
+      // toDataURL() may return 'data:,' in test env (jsdom has no canvas), which is fine.
+      let sunDataUrl: string
+      try { sunDataUrl = sunCanvas.toDataURL() } catch { sunDataUrl = '' }
       const sunBillboards = new BillboardCollection()
-      sunBillboards.add({
-        position: SUN_POS,
-        image: sunCanvas,
-        scale: 1.2,
-        sizeInMeters: false,
-        disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      })
+      if (sunDataUrl) {
+        sunBillboards.add({
+          position: Cartesian3.ZERO,
+          image: sunDataUrl,
+          scale: 1.0,
+          sizeInMeters: false,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        })
+      }
       scene.primitives.add(sunBillboards)
 
       // Sol label
@@ -186,6 +198,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(sunBillboards)
+          scene.primitives.remove(sunPoints)
           scene.primitives.remove(sunLabel)
           scene.primitives.remove(beltLines)
         }
