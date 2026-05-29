@@ -188,7 +188,7 @@ beforeEach(() => vi.clearAllMocks())
 
 // ── Bug 1: Sun glow rendered as Billboard (PointPrimitive gl_PointSize is capped ~64px by WebGL) ──
 describe('SolarSystemViewer Sun rendering', () => {
-  it('renders Sun glow as a Billboard (not PointPrimitive) to bypass WebGL gl_PointSize hardware cap', async () => {
+  it('renders Sun PointPrimitive at origin with disableDepthTestDistance so it is never clipped', async () => {
     render(<SolarSystemViewer {...baseProps} />)
     await waitFor(() => expect(mockBillboardAdd).toHaveBeenCalled())
     const pos = mockBillboardAdd.mock.calls[0]?.[0]?.position
@@ -203,7 +203,7 @@ describe('SolarSystemViewer flyTo Sol', () => {
   it('positions camera directly above ecliptic looking down so Sun is dead-center', async () => {
     const ref = createRef<SolarSystemViewerHandle>()
     render(<SolarSystemViewer {...baseProps} ref={ref} />)
-    await waitFor(() => expect(mockBillboardAdd).toHaveBeenCalled())
+    await waitFor(() => expect(mockPointsAdd).toHaveBeenCalled())
 
     ref.current!.flyTo({ kind: 'sol' })
 
