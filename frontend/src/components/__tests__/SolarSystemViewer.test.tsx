@@ -12,6 +12,7 @@ const AU_M = 1.496e11
 // ── Hoisted mocks (must be initialized before vi.mock hoisting) ────────────
 const mockFlyToBoundingSphere = vi.hoisted(() => vi.fn())
 const mockPointsAdd = vi.hoisted(() => vi.fn())
+const mockPolylineAdd = vi.hoisted(() => vi.fn())
 
 // ── Cesium mock ────────────────────────────────────────────────────────────
 vi.mock('cesium', () => {
@@ -42,7 +43,7 @@ vi.mock('cesium', () => {
 
   class LabelCollection { add = vi.fn() }
   const LabelStyle = { FILL_AND_OUTLINE: 1 }
-  class PolylineCollection { add = vi.fn() }
+  class PolylineCollection { add = mockPolylineAdd }
   class PointPrimitiveCollection { add = mockPointsAdd }
 
   class ScreenSpaceEventHandler { setInputAction = vi.fn(); destroy = vi.fn() }
@@ -193,6 +194,17 @@ describe('SolarSystemViewer Sun placement', () => {
       return opts?.position?.x === 0 && opts?.position?.y === 0 && opts?.position?.z === 0
     })
     expect(atOrigin).toBeUndefined()
+  })
+})
+
+// ── Bug 3: orbit ring PolylineCollection in one-time [viewer] effect is invisible ──
+describe('SolarSystemViewer orbit rings', () => {
+  it('re-adds orbit ring polylines when currentMjd changes (rings must live in [viewer, currentMjd] effect)', async () => {
+    const { rerender } = render(<SolarSystemViewer {...baseProps} currentMjd={51544.5} />)
+    await waitFor(() => expect(mockPolylineAdd).toHaveBeenCalled())
+    vi.clearAllMocks()
+    rerender(<SolarSystemViewer {...baseProps} currentMjd={51600} />)
+    await waitFor(() => expect(mockPolylineAdd).toHaveBeenCalled())
   })
 })
 

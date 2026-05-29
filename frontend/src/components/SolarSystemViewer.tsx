@@ -155,45 +155,10 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       })
       scene.primitives.add(sunLabel)
 
-      // Planet orbit rings
-      const planetLines = new PolylineCollection()
-      PLANETS.forEach((p) => {
-        planetLines.add({
-          positions: eclipticCircle(p.sma),
-          width: p.name === 'Earth' ? 2 : 1,
-          material: Material.fromType(Material.ColorType, {
-            color: Color.fromCssColorString(p.color).withAlpha(p.ringAlpha),
-          }),
-        })
-      })
-      scene.primitives.add(planetLines)
-
-      // Planet labels and glows are in a separate effect that tracks currentMjd
-
-      // Main asteroid belt context ring (2.2–3.2 AU, faint grey)
-      const beltLines = new PolylineCollection()
-      beltLines.add({
-        positions: eclipticCircle(2.2),
-        width: 1,
-        material: Material.fromType(Material.ColorType, {
-          color: Color.fromCssColorString('#555566').withAlpha(0.25),
-        }),
-      })
-      beltLines.add({
-        positions: eclipticCircle(3.2),
-        width: 1,
-        material: Material.fromType(Material.ColorType, {
-          color: Color.fromCssColorString('#555566').withAlpha(0.25),
-        }),
-      })
-      scene.primitives.add(beltLines)
-
       return () => {
         if (!viewer.isDestroyed()) {
           scene.primitives.remove(sunPoints)
           scene.primitives.remove(sunLabel)
-          scene.primitives.remove(planetLines)
-          scene.primitives.remove(beltLines)
         }
       }
     }, [viewer])
@@ -250,11 +215,44 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         }
       })
 
+      // Planet orbit rings — live here (not in [viewer] effect) so Cesium renders them reliably
+      const planetLines = new PolylineCollection()
+      PLANETS.forEach((p) => {
+        planetLines.add({
+          positions: eclipticCircle(p.sma),
+          width: p.name === 'Earth' ? 2 : 1,
+          material: Material.fromType(Material.ColorType, {
+            color: Color.fromCssColorString(p.color).withAlpha(p.ringAlpha),
+          }),
+        })
+      })
+      scene.primitives.add(planetLines)
+
+      // Main asteroid belt context rings (2.2–3.2 AU, faint grey)
+      const beltLines = new PolylineCollection()
+      beltLines.add({
+        positions: eclipticCircle(2.2),
+        width: 1,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#555566').withAlpha(0.25),
+        }),
+      })
+      beltLines.add({
+        positions: eclipticCircle(3.2),
+        width: 1,
+        material: Material.fromType(Material.ColorType, {
+          color: Color.fromCssColorString('#555566').withAlpha(0.25),
+        }),
+      })
+      scene.primitives.add(beltLines)
+
       scene.primitives.add(allPlanetPoints)
       scene.primitives.add(planetLabels)
 
       return () => {
         if (!viewer.isDestroyed()) {
+          scene.primitives.remove(planetLines)
+          scene.primitives.remove(beltLines)
           scene.primitives.remove(allPlanetPoints)
           scene.primitives.remove(planetLabels)
         }
