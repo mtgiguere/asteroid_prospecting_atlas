@@ -65,6 +65,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
         flyTo(target: FlyTarget) {
           if (!viewer) return
 
+          if (target.kind === 'sol') {
+            viewer.camera.flyTo({
+              destination: new Cartesian3(0, 0, 2.8e11),
+              orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
+              duration: 2.0,
+            })
+            return
+          }
+
           let position: Cartesian3
           let radius: number
 
@@ -112,7 +121,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       [viewer],
     )
 
-    // One-time scene setup
+    // One-time scene setup — Sun billboard, Sol label, belt rings, camera config
     useEffect(() => {
       if (!viewer) return
 
