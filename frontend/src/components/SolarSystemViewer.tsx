@@ -9,6 +9,7 @@ import {
   LabelStyle,
   PolylineCollection,
   PointPrimitiveCollection,
+  BillboardCollection,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   Material,
@@ -68,8 +69,15 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
           let radius: number
 
           if (target.kind === 'sol') {
-            position = new Cartesian3(7e6, 0, 0)
-            radius = 1.8e11
+            // Sit directly above the ecliptic so the Sun lands dead-centre.
+            // flyToBoundingSphere approaches from an angle; camera.flyTo with an
+            // explicit Z-axis destination avoids the off-axis drift.
+            viewer.camera.flyTo({
+              destination: new Cartesian3(0, 0, 2.8e11),
+              orientation: { direction: new Cartesian3(0, 0, -1), up: new Cartesian3(1, 0, 0) },
+              duration: 2.0,
+            })
+            return
           } else if (target.kind === 'planet') {
             const planet = PLANETS.find((p) => p.id === target.planetId)
             if (!planet) return
@@ -130,15 +138,34 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
       controller.zoomFactor = 2.0          // default 5.0 — much too fast at AU scale
       controller.minimumZoomDistance = 1e8 // ~0.001 AU — close enough to inspect a rock
 
-      // Sol — offset 7 Mm from origin so Cesium's horizon culling (WGS84 ellipsoid
-      // radius ≈ 6371 km) doesn't occlude it. 7e6 m is invisible at AU scale.
+      // Sol — offset 7 Mm from origin so Cesium's WGS84 ellipsoid culling doesn't apply.
+      // Billboard (textured quad) instead of PointPrimitive: WebGL gl_PointSize is capped
+      // at ~64px on most GPUs, silently clipping the large outer glow layers.
       const SUN_POS = new Cartesian3(7e6, 0, 0)
-      const sunPoints = new PointPrimitiveCollection()
-      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#ff9900').withAlpha(0.08), pixelSize: 200, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#ffee66').withAlpha(0.18), pixelSize: 120, disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#fff5aa').withAlpha(0.6),  pixelSize: 60,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      sunPoints.add({ position: SUN_POS, color: Color.fromCssColorString('#ffffff'),                 pixelSize: 28,  disableDepthTestDistance: Number.POSITIVE_INFINITY })
-      scene.primitives.add(sunPoints)
+      const sunCanvas = document.createElement('canvas')
+      sunCanvas.width = 256; sunCanvas.height = 256
+      const sunCtx = sunCanvas.getContext('2d')
+      if (sunCtx) {
+        const grad = sunCtx.createRadialGradient(128, 128, 0, 128, 128, 128)
+        grad.addColorStop(0.00, 'rgba(255, 252, 240, 1.00)')
+        grad.addColorStop(0.06, 'rgba(255, 248, 200, 0.95)')
+        grad.addColorStop(0.14, 'rgba(255, 230,  80, 0.80)')
+        grad.addColorStop(0.28, 'rgba(255, 170,  10, 0.55)')
+        grad.addColorStop(0.48, 'rgba(255, 110,   0, 0.28)')
+        grad.addColorStop(0.68, 'rgba(255,  70,   0, 0.10)')
+        grad.addColorStop(1.00, 'rgba(255,  40,   0, 0.00)')
+        sunCtx.fillStyle = grad
+        sunCtx.fillRect(0, 0, 256, 256)
+      }
+      const sunBillboards = new BillboardCollection()
+      sunBillboards.add({
+        position: SUN_POS,
+        image: sunCanvas,
+        scale: 1.2,
+        sizeInMeters: false,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      })
+      scene.primitives.add(sunBillboards)
 
       // Sol label
       const sunLabel = new LabelCollection()
@@ -157,7 +184,7 @@ export const SolarSystemViewer = forwardRef<SolarSystemViewerHandle, Props>(
 
       return () => {
         if (!viewer.isDestroyed()) {
-          scene.primitives.remove(sunPoints)
+          scene.primitives.remove(sunBillboards)
           scene.primitives.remove(sunLabel)
         }
       }

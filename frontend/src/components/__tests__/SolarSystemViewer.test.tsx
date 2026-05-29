@@ -11,8 +11,10 @@ const AU_M = 1.496e11
 
 // ── Hoisted mocks (must be initialized before vi.mock hoisting) ────────────
 const mockFlyToBoundingSphere = vi.hoisted(() => vi.fn())
+const mockCameraFlyTo = vi.hoisted(() => vi.fn())
 const mockPointsAdd = vi.hoisted(() => vi.fn())
 const mockPolylineAdd = vi.hoisted(() => vi.fn())
+const mockBillboardAdd = vi.hoisted(() => vi.fn())
 
 // ── Cesium mock ────────────────────────────────────────────────────────────
 vi.mock('cesium', () => {
@@ -45,6 +47,7 @@ vi.mock('cesium', () => {
   const LabelStyle = { FILL_AND_OUTLINE: 1 }
   class PolylineCollection { add = mockPolylineAdd }
   class PointPrimitiveCollection { add = mockPointsAdd }
+  class BillboardCollection { add = mockBillboardAdd }
 
   class ScreenSpaceEventHandler { setInputAction = vi.fn(); destroy = vi.fn() }
   const ScreenSpaceEventType = { LEFT_CLICK: 1, MOUSE_MOVE: 2 }
@@ -76,7 +79,7 @@ vi.mock('cesium', () => {
 
   return {
     Cartesian3, Cartesian2, Color, LabelCollection, LabelStyle, PolylineCollection,
-    PointPrimitiveCollection, ScreenSpaceEventHandler, ScreenSpaceEventType,
+    PointPrimitiveCollection, BillboardCollection, ScreenSpaceEventHandler, ScreenSpaceEventType,
     Material, BoundingSphere, Quaternion, Matrix3, Matrix4,
     EllipsoidGeometry, GeometryInstance, Primitive, PerInstanceColorAppearance,
     ColorGeometryInstanceAttribute, defined,
@@ -102,7 +105,7 @@ vi.mock('resium', async () => {
         }
         const fakeViewer = {
           scene: fakeScene,
-          camera: { setView: vi.fn(), flyToBoundingSphere: mockFlyToBoundingSphere },
+          camera: { setView: vi.fn(), flyToBoundingSphere: mockFlyToBoundingSphere, flyTo: mockCameraFlyTo },
           cesiumWidget: { creditContainer: { setAttribute: vi.fn() } },
           isDestroyed: () => false,
         }
@@ -183,17 +186,33 @@ const baseProps = {
 
 beforeEach(() => vi.clearAllMocks())
 
-// ── Bug 1: Sun at Cartesian3.ZERO is inside WGS84 ellipsoid (horizon culled) ──
-describe('SolarSystemViewer Sun placement', () => {
-  it('does not place Sun glow primitives at the exact origin (Cartesian3.ZERO causes horizon culling)', async () => {
+// ── Bug 1: Sun glow rendered as Billboard (PointPrimitive gl_PointSize is capped ~64px by WebGL) ──
+describe('SolarSystemViewer Sun rendering', () => {
+  it('renders Sun glow as a Billboard (not PointPrimitive) to bypass WebGL gl_PointSize hardware cap', async () => {
     render(<SolarSystemViewer {...baseProps} />)
-    await waitFor(() => expect(mockPointsAdd).toHaveBeenCalled())
+    await waitFor(() => expect(mockBillboardAdd).toHaveBeenCalled())
+    const pos = mockBillboardAdd.mock.calls[0]?.[0]?.position
+    expect(pos).toBeDefined()
+    // Sun must be offset from origin so Cesium WGS84 ellipsoid culling doesn't apply
+    expect(pos.x !== 0 || pos.y !== 0 || pos.z !== 0).toBe(true)
+  })
+})
 
-    const atOrigin = mockPointsAdd.mock.calls.find((call) => {
-      const opts = call[0]
-      return opts?.position?.x === 0 && opts?.position?.y === 0 && opts?.position?.z === 0
-    })
-    expect(atOrigin).toBeUndefined()
+// ── Bug 4: flyTo Sol used flyToBoundingSphere which positions camera off-axis ──
+describe('SolarSystemViewer flyTo Sol', () => {
+  it('positions camera directly above ecliptic looking down so Sun is dead-center', async () => {
+    const ref = createRef<SolarSystemViewerHandle>()
+    render(<SolarSystemViewer {...baseProps} ref={ref} />)
+    await waitFor(() => expect(mockBillboardAdd).toHaveBeenCalled())
+
+    ref.current!.flyTo({ kind: 'sol' })
+
+    expect(mockCameraFlyTo).toHaveBeenCalledOnce()
+    const dest = mockCameraFlyTo.mock.calls[0][0].destination
+    // Camera sits on the Z-axis directly above the ecliptic (x=0, y=0, z>0)
+    expect(dest.x).toBe(0)
+    expect(dest.y).toBe(0)
+    expect(dest.z).toBeGreaterThan(0)
   })
 })
 
