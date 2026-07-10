@@ -1,42 +1,76 @@
-# Asteroid Prospecting Atlas
+# Asteroid Prospecting Atlas — Overview
 
-The Asteroid Prospecting Atlas is a data platform designed to analyze asteroids and estimate their potential accessibility for future exploration or mining missions.
+The Asteroid Prospecting Atlas is an interactive 3D solar system explorer that ranks real near-Earth asteroids by mining potential. It combines orbital mechanics, planetary science, and resource estimation into a live visualization deployable anywhere.
 
-The system ingests astronomical data from NASA's Jet Propulsion Laboratory (JPL) Small Body Database and transforms it into a structured dataset that can be analyzed and ranked.
+**[Live Demo →](https://asteroidprospectingatlas-production.up.railway.app)**
+
+---
 
 ## What the Atlas Does
 
-The system currently supports:
+- Fetches 500 real near-Earth asteroids from the NASA JPL Small Body Database
+- Scores each asteroid on prospecting potential and orbital accessibility
+- Classifies asteroids by spectral type (C, S, M, X) with estimated resource masses
+- Renders the full solar system in two interactive 3D renderers — Cesium and Spacekit.js
+- Time controls let users scrub or animate through real Keplerian orbital positions
+- Sidebar navigation with search, filtering, and per-asteroid resource breakdowns
 
-• Fetching asteroid data from NASA  
-• Normalizing orbital data  
-• Storing asteroid records in PostgreSQL  
-• Calculating orbital characteristics  
-• Identifying Earth-crossing asteroids  
-• Ranking asteroids by accessibility and prospecting score  
-• Visualizing asteroid orbits in an interactive 3D solar system  
+---
 
 ## Why This Project Exists
 
-There are hundreds of thousands of known asteroids in our solar system.
+Hundreds of thousands of asteroids orbit the Sun. Some are richer in water, metals, and platinum-group metals than anything on Earth. Some are easier to reach than the Moon. The goal of this project is to make that data explorable and understandable:
 
-Some of them are easier to reach than others.
+- Which asteroids are easiest to reach from Earth?
+- Which ones cross Earth's orbit?
+- What are they made of, and how much is there?
+- Which objects are the best candidates for future exploration or resource extraction?
 
-The goal of this project is to build tools that help answer questions such as:
-
-• Which asteroids are easiest to reach from Earth?  
-• Which asteroids cross Earth's orbit?  
-• Which objects might be good candidates for future exploration missions?
+---
 
 ## Current Capabilities
 
-The Atlas can currently:
+### Data Pipeline
+- Ingests real orbital elements and physical properties from NASA JPL SBDB
+- Normalises, stores, and scores 500 near-Earth asteroids in PostgreSQL
+- Classifies spectral types and estimates resource mass (water, metals, PGMs) per asteroid
 
-1. Ingest real asteroid data from NASA
-2. Calculate orbital metrics
-3. Classify asteroid orbits
-4. Rank asteroids by accessibility and prospecting score
-5. Provide an API for querying results
-6. Render asteroid orbits in a 3D interactive solar system (CesiumJS frontend)
+### Scoring
+- **Prospecting Score (0–1)**: weighted combination of estimated resource mass normalised against the dataset
+- **Accessibility Score (0–1)**: orbital similarity to Earth based on semi-major axis, eccentricity, and inclination delta-v approximation
 
-Future versions will include more detailed orbital analysis and mission cost estimates.
+### API
+- FastAPI backend with four endpoints: `/ping`, `/asteroids/orbits`, `/asteroids/accessible`, `/asteroids/prospectable`
+- CORS-configurable for any deployment environment
+
+### Visualization
+Two fully functional 3D renderers, toggled live from the Controls bar:
+
+**Cesium renderer**
+- WebGL globe engine adapted for solar system scale
+- Multi-layer glow effects for Sun and all planets
+- Animated orbit arc on asteroid selection (sweep in, fade out)
+- Click-to-select with camera fly-to
+- Color modes: prospecting score, accessibility score, spectral type
+
+**Spacekit.js renderer**
+- Three.js-based orrery built specifically for solar system visualization
+- Keplerian `Ephem` objects — one `sim.setJd()` call updates all 500 asteroid positions
+- Selected asteroid highlighted with white glow + blue orbit arc
+- Lighter and faster than Cesium for pure orrery use cases
+
+### UX Features
+- Time scrubber with play/pause — real orbital mechanics at any date
+- Sidebar search across 500 asteroids with spectral type filter
+- NavigationSidebar with Sol / planet / asteroid flyTo
+- Per-asteroid resource card with Earth-impact equivalencies
+- Spectral type legend overlay
+
+---
+
+## Deployment
+
+Hosted on Railway with three services:
+- **Backend**: FastAPI / uvicorn on Railway
+- **Frontend**: Static Vite build served via `npx serve`
+- **Database**: Railway PostgreSQL (500 asteroids seeded from NASA JPL)
