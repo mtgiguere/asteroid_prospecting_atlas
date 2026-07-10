@@ -1,0 +1,28 @@
+name: QA
+
+# Delegates to central reusable workflows in mtgiguere/qa_pipeline. Uses the
+# PostGIS variant because tests need a live database (schema initialized first).
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write   # CodeQL
+
+jobs:
+  python:
+    uses: mtgiguere/qa_pipeline/.github/workflows/python-qa-postgres.yml@main
+    with:
+      package-manager: pip
+      db-init-command: "python -m asteroid_atlas.db.init_db"
+      # database-url / postgres-* default to the asteroid_atlas dev values.
+      enforce-coverage: false
+      run-format-check: true
+
+  security:
+    uses: mtgiguere/qa_pipeline/.github/workflows/security-qa.yml@main
+    with:
+      codeql-languages: '["python","javascript"]'
