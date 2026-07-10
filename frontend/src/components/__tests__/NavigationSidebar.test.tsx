@@ -23,8 +23,23 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
   perihelion_au: 1.133,
   aphelion_au: 1.783,
   earth_orbit_crossing: false,
-  accessibility_score: 1.2,
+  delta_v_kms: 4.8,
+  accessibility_score: 4.8,
   prospecting_score: 0.8,
+  mission_roi: {
+    resource_value_usd: 2.5e12,
+    resource_value_label: '$2.5T',
+    reach_rating: 'MODERATE',
+    reach_summary: '~67% of launch mass must be propellant',
+    mission_grade: 'STRONG',
+    summary: 'High-value iron, nickel, and silicates, within practical mission range.',
+    cost_tiers: {
+      flyby:         { cost_usd: 300_000_000,   cost_label: '$300.0M', roi_ratio: 8333.3, roi_label: '8333.3x return' },
+      rendezvous:    { cost_usd: 800_000_000,   cost_label: '$800.0M', roi_ratio: 3125.0, roi_label: '3125.0x return' },
+      sample_return: { cost_usd: 2_000_000_000, cost_label: '$2.0B',   roi_ratio: 1250.0, roi_label: '1250.0x return' },
+      recommended: 'sample_return',
+    },
+  },
   resource_profile: {
     type_group: 'S',
     type_label: 'Silicaceous (S-type)',
@@ -34,6 +49,15 @@ const makeAsteroid = (overrides: Partial<AsteroidOrbit> = {}): AsteroidOrbit => 
     metal_mass_kg: 2.5e14,
     pgm_mass_kg: 1e10,
     why_go_here: 'Iron and nickel for orbital construction.',
+  },
+  launch_window: {
+    days_until_window: 312.0,
+    transit_days: 259.0,
+    synodic_period_days: 780.0,
+    launch_date: '2026-04-02',
+    arrival_date: '2026-12-17',
+    window_label: 'Opens in 10m',
+    repeat_label: 'Windows repeat every 2.1 years',
   },
   ...overrides,
 })
@@ -218,6 +242,100 @@ describe('NavigationSidebar', () => {
       expect(screen.queryByText(/433 Eros/i)).not.toBeInTheDocument()
       expect(screen.getByText(/Eros Clone/i)).toBeInTheDocument()
       expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('sort', () => {
+    // LOW_DV: easiest to reach, worst prospecting score, name sorts last
+    const LOW_DV = makeAsteroid({
+      asteroid_id: 10,
+      name: 'Zeta Rock',
+      nasa_jpl_id: '1000001',
+      delta_v_kms: 2.1,
+      accessibility_score: 2.1,
+      prospecting_score: 0.9,
+    })
+    // HIGH_DV: hardest to reach, best prospecting score, name sorts first
+    const HIGH_DV = makeAsteroid({
+      asteroid_id: 11,
+      name: 'Alpha Stone',
+      nasa_jpl_id: '1000002',
+      delta_v_kms: 8.5,
+      accessibility_score: 8.5,
+      prospecting_score: 0.2,
+    })
+    const pair = [LOW_DV, HIGH_DV]
+
+    function asteroidNames() {
+      return screen.getAllByTestId('asteroid-list-item').map((el) => el.textContent ?? '')
+    }
+
+    function sortSelect() {
+      return screen.getByRole('combobox', { name: /sort/i })
+    }
+
+    it('renders a sort dropdown with all five options', () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      expect(sortSelect()).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /score/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /delta-v/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /name/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /window/i })).toBeInTheDocument()
+      expect(screen.getByRole('option', { name: /value/i })).toBeInTheDocument()
+    })
+
+    it('default sort is by prospecting score ascending — best score first', () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Alpha Stone/)
+      expect(names[1]).toMatch(/Zeta Rock/)
+    })
+
+    it('sort select default value is score', () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      expect(sortSelect()).toHaveValue('score')
+    })
+
+    it('Delta-v sort puts lowest delta-v first', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Zeta Rock/)
+      expect(names[1]).toMatch(/Alpha Stone/)
+    })
+
+    it('Name sort puts asteroids in alphabetical order', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.selectOptions(sortSelect(), 'name')
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Alpha Stone/)
+      expect(names[1]).toMatch(/Zeta Rock/)
+    })
+
+    it('sort select value updates when changed', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
+      expect(sortSelect()).toHaveValue('delta_v')
+    })
+
+    it('sort and resource filter apply together', async () => {
+      const metalA = makeAsteroid({ asteroid_id: 20, name: 'Iron Alpha', nasa_jpl_id: '2000020', delta_v_kms: 5.0, prospecting_score: 0.5 })
+      const metalB = makeAsteroid({ asteroid_id: 21, name: 'Iron Zeta',  nasa_jpl_id: '2000021', delta_v_kms: 3.0, prospecting_score: 0.7 })
+      render(<NavigationSidebar asteroids={[metalA, metalB, C_TYPE]} onFlyTo={vi.fn()} />)
+      await userEvent.click(screen.getByRole('button', { name: /metals/i }))
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
+      expect(screen.queryByText(/Bennu/i)).not.toBeInTheDocument()
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Iron Zeta/)
+      expect(names[1]).toMatch(/Iron Alpha/)
+    })
+
+    it('sort resets correctly when switching back to Score', async () => {
+      render(<NavigationSidebar asteroids={pair} onFlyTo={vi.fn()} />)
+      await userEvent.selectOptions(sortSelect(), 'delta_v')
+      await userEvent.selectOptions(sortSelect(), 'score')
+      const names = asteroidNames()
+      expect(names[0]).toMatch(/Alpha Stone/)
     })
   })
 })

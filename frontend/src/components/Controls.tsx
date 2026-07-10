@@ -1,4 +1,4 @@
-import type { ColorMode } from '../types'
+import type { ColorMode, RendererMode } from '../types'
 import styles from './Controls.module.css'
 
 interface Props {
@@ -7,9 +7,11 @@ interface Props {
   colorMode: ColorMode
   asteroidCount: number
   loading: boolean
+  rendererMode: RendererMode
   onLimitChange: (v: number) => void
   onEarthCrossingChange: (v: boolean) => void
   onColorModeChange: (v: ColorMode) => void
+  onRendererChange: (v: RendererMode) => void
 }
 
 export function Controls({
@@ -18,9 +20,11 @@ export function Controls({
   colorMode,
   asteroidCount,
   loading,
+  rendererMode,
   onLimitChange,
   onEarthCrossingChange,
   onColorModeChange,
+  onRendererChange,
 }: Props) {
   return (
     <div className={styles.bar}>
@@ -60,9 +64,27 @@ export function Controls({
           >
             <option value="spectral_type">Spectral Type</option>
             <option value="prospecting_score">Prospecting Score</option>
-            <option value="accessibility_score">Accessibility Score</option>
+            <option value="accessibility_score">Delta-v (km/s)</option>
           </select>
         </label>
+      </div>
+
+      <div className={styles.rendererToggle}>
+        <span className={styles.label}>RENDERER</span>
+        <button
+          className={`${styles.toggleBtn} ${rendererMode === 'cesium' ? styles.toggleActive : ''}`}
+          aria-pressed={rendererMode === 'cesium'}
+          onClick={() => onRendererChange('cesium')}
+        >
+          CESIUM
+        </button>
+        <button
+          className={`${styles.toggleBtn} ${rendererMode === 'spacekit' ? styles.toggleActive : ''}`}
+          aria-pressed={rendererMode === 'spacekit'}
+          onClick={() => onRendererChange('spacekit')}
+        >
+          SPACEKIT
+        </button>
       </div>
 
       <span className={styles.status}>
